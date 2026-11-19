@@ -107,7 +107,7 @@
     setSub();
     if (firstRender) {
       firstRender = false;
-      requestAnimationFrame(() => { initialView(); handleScan(); });
+      setTimeout(() => { initialView(); handleScan(); }, 0); // not rAF: it never fires in a background tab
     }
     if (!$('sheet').hidden && openId) openPerson(openId, true);
   }
