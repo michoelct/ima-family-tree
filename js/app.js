@@ -311,6 +311,9 @@
       if (pa.spouse === ids[i] && A.y === B.y) {
         const y = A.y + o.cardH / 2, ax = A.x < B.x ? A.x + o.cardW : A.x, bx = A.x < B.x ? B.x : B.x + o.cardW;
         d += `M ${ax} ${y} H ${bx} `;
+      } else if ((A.fromX != null && A.gen > B.gen) || (B.fromX != null && B.gen > A.gen)) {
+        const kid = A.gen > B.gen ? A : B;
+        d += `M ${kid.fromX} ${kid.fromY} V ${kid.busY} H ${kid.x + o.cardW / 2} V ${kid.y} `;
       } else if (A.stacked || B.stacked) {
         const kid = A.stacked && A.gen > B.gen ? A : B, par = kid === A ? B : A;
         const pp = fam.people.get(par.id);
@@ -394,6 +397,7 @@
     else if (p.kind === 'placeholder') where = 'Not in the sheet yet';
     else if (p.otherParent) where = 'Family · parent of ' + p.otherKids.map(k => display(fam.people.get(k))).join(' & ');
     else if (p.familyGuest) where = 'Family';
+    else if (p.stepOf) { const par = fam.people.get(p.stepOf); where = 'Generation ' + p.gen + ' · ' + display(fam.people.get(par.spouse)) + ' & ' + display(par) + '\u2019s family'; }
     else if (root && p.gen) {
       const r = FT.relate(fam.people, fam.rootId, p.id, fam.rootId);
       where = 'Generation ' + p.gen + (r && r.kind !== 'none' && r.kind !== 'marriage' ? ' · ' + display(root) + '’s ' + (r.word || r.label) : '');
@@ -423,7 +427,7 @@
       if (p.parents.length) facts.append(el('div', { class: 'fact' }, el('span', { text: 'Parents' }), chips(p.parents)));
       if (p.spouse) facts.append(el('div', { class: 'fact' }, el('span', { text: 'Spouse' }), chips([p.spouse])));
       const sibs = new Set();
-      p.parents.filter(pid => fam.people.get(pid).blood).forEach(pid => fam.people.get(pid).children.forEach(c => { if (c !== id) sibs.add(c); }));
+      p.parents.forEach(pid => fam.people.get(pid).children.forEach(c => { if (c !== id) sibs.add(c); }));
       if (sibs.size) facts.append(el('div', { class: 'fact' }, el('span', { text: 'Brothers & sisters' }), chips([...sibs].sort((a, b) => fam.people.get(a).order - fam.people.get(b).order))));
       const kids = new Set(p.children.concat(p.otherKids || []));
       if (kids.size) facts.append(el('div', { class: 'fact' }, el('span', { text: 'Children' }), chips([...kids].sort((a, b) => fam.people.get(a).order - fam.people.get(b).order))));
@@ -601,6 +605,7 @@
         let line;
         if (p.kind === 'friend') line = 'Friend of ' + cfg.rootTitle;
         else if (p.otherParent) line = p.otherKids.map(k => display(fam.people.get(k))).join(' & ') + '’s parent';
+        else if (p.stepOf) { const par = fam.people.get(p.stepOf); line = display(fam.people.get(par.spouse)) + ' & ' + display(par) + '’s family'; }
         else if (p.familyGuest) line = cfg.rootTitle + '’s family';
         else { const r = FT.relate(fam.people, fam.rootId, p.id, fam.rootId); line = p.id === fam.rootId ? 'The birthday girl!' : r && r.kind !== 'none' ? cfg.rootTitle + '’s ' + (r.word || r.label) : 'Generation ' + p.gen; }
         grid.append(el('div', { class: 'pbadge' }, q, el('div', { class: 'who' },

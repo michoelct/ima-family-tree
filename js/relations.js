@@ -143,6 +143,18 @@
         return { kind: 'viaChild', side: 'mine', kid: best.kid, rel: back, label: back.kind === 'blood' && back.up === 1 && back.down === 0 ? 'your child\u2019s parent' : 'your child\u2019s ' + (back.word || back.label), path: [aId].concat(back.path), common: [] };
       }
     }
+    // a partner's child from before: part of the descendant's family
+    const famOf = P => { const par = people.get(P.stepOf); const d = par && people.get(par.spouse); return d ? { par, d } : null; };
+    if (B.stepOf && famOf(B)) {
+      const { par, d } = famOf(B);
+      const r = d.id === aId ? null : relate(people, aId, d.id, rootId);
+      if (d.id === aId || (r && r.kind !== 'none')) return { kind: 'stepFamily', side: 'their', fam: [d.id, par.id], via: d.id, rel: r, label: display(d) + ' & ' + display(par) + '\u2019s family', path: (r ? r.path : [aId]).concat(par.id, bId), common: [] };
+    }
+    if (A.stepOf && famOf(A)) {
+      const { par, d } = famOf(A);
+      const r = relate(people, d.id, bId, rootId);
+      if (r && r.kind !== 'none') return { kind: 'stepFamily', side: 'mine', fam: [d.id, par.id], via: d.id, rel: r, label: display(d) + '\u2019s ' + (r.word || r.label), path: [aId, par.id].concat(r.path), common: [] };
+    }
     // anything else: shortest path through any link
     const path = anyPath(people, aId, bId);
     return { kind: path ? 'marriage' : 'none', label: path ? 'family by marriage' : 'not linked yet', path: path || [aId, bId], common: [] };
@@ -204,6 +216,14 @@
         }
         if (rel.rel.kind === 'blood' && rel.rel.up === 1 && rel.rel.down === 0) return b + ' is ' + name(rel.kid) + '\u2019s parent too.';
         return b + ' is ' + poss + ' child ' + name(rel.kid) + '\u2019s ' + (rel.rel.word || rel.rel.label) + '.';
+      case 'stepFamily': {
+        const famName = name(rel.fam[0]) + ' & ' + name(rel.fam[1]) + '\u2019s family';
+        if (rel.side === 'their') {
+          if (!rel.rel) return b + ' is your spouse ' + name(rel.fam[1]) + '\u2019s child.';
+          return b + ' is part of ' + poss + ' ' + (rel.rel.word || rel.rel.label) + ' ' + name(rel.via) + '\u2019s family.';
+        }
+        return b + ' is ' + name(rel.via) + '\u2019s ' + (rel.rel.word || rel.rel.label) + ' \u2014 ' + (you ? 'you\u2019re' : a + ' is') + ' part of ' + famName + '.';
+      }
       case 'friend': return B.kind === 'friend' ? b + ' is a friend of ' + name(rootId) + '.' : b + ' is part of ' + name(rootId) + '’s family.';
       case 'marriage': return b + ' and ' + subj + ' are family by marriage.';
       default: return b + ' isn’t linked to ' + subj + ' in the sheet yet.';
@@ -227,6 +247,7 @@
     if (rel.kind === 'blood') return rel.up + rel.down;
     if (rel.kind === 'inlaw') return rel.path.length;
     if (rel.kind === 'friend') return 50;
+    if (rel.kind === 'stepFamily') return (rel.rel ? closeness(rel.rel) : 0) + 2;
     if (rel.kind === 'viaChild') return (rel.rel.kind === 'self' ? 1 : closeness(rel.rel) + 1);
     return 90;
   }

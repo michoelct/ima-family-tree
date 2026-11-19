@@ -95,3 +95,31 @@ test('separated parents and a new partner: nobody is drawn as an ex, children ha
   assert.ok(f.warnings.some(w => w.kind === 'partner'), 'organiser is told why Ruth is not beside Michoel');
   assert.ok(!f.warnings.map(w => w.text).join(' ').match(/\b(ex|divorc)/i));
 });
+
+test('a partner\'s children from before are drawn under the partner as part of the family', () => {
+  const r = [H,
+    ['FAM-010', 'Shulamit Feder', 'Ima', 'Family Member', '1', '', '', ''],
+    ['FAM-018', 'Eli Feder', 'Eli', 'Family Member', '2', 'Shulamit Feder', '', ''],
+    ['FAM-021', 'Esther Worch', 'Esti', 'Family Member', '3', 'Eli Feder', '', 'Mendy Worch'],
+    ['FAM-022', 'Menachem Worch', 'Mendy', 'Spouse / Partner', '3', '', '', 'Esti Worch'],
+    ['FAM-023', 'Yermia Worch', 'Yermi', 'Family Member', '4', 'Esti Worch', 'Mendy Worch', ''],
+    ['FAM-060', 'Ari Worch', 'Ari', 'Family Member', '4', 'Mendy Worch', 'Rachel Gold', ''],
+    ['FAM-020', 'Yosef Feder', 'Yossi', 'Family Member', '3', 'Eli Feder', '', '']
+  ];
+  const f = FT.buildFamily({ familyRows: r, friendRows: [], rootName: 'Shulamit Feder' });
+  const P = id => f.people.get(id);
+  assert.strictEqual(P('FAM-060').stepOf, 'FAM-022');
+  assert.deepStrictEqual(P('FAM-060').parents, ['FAM-022']);
+  assert.strictEqual(P('FAM-060').onTree, true);
+  assert.strictEqual(P('FAM-060').gen, 4);
+  assert.ok(![...f.people.values()].some(p => /rachel/i.test(p.name)), 'their other parent is not invented');
+  const L = FT.layoutTree(f.people, f.rootId);
+  const n = id => L.nodes.find(x => x.id === id);
+  assert.ok(n('FAM-060') && n('FAM-060').x > n('FAM-023').x, 'drawn to the right, under the partner');
+  assert.strictEqual(say(f, 'FAM-021', 'FAM-060'), 'Ari is your spouse Mendy’s child.');
+  assert.strictEqual(say(f, 'FAM-020', 'FAM-060'), 'Ari is part of your sibling Esti’s family.');
+  assert.strictEqual(say(f, 'FAM-060', 'FAM-020'), 'Yossi is Esti’s sibling — you’re part of Esti & Mendy’s family.');
+  assert.strictEqual(say(f, 'FAM-060', 'FAM-023'), 'Yermi is your sibling.');
+  assert.strictEqual(say(f, 'FAM-060', 'FAM-021'), 'Esti is married to your parent, Mendy.');
+  assert.ok(!/step/i.test(say(f, 'FAM-020', 'FAM-060') + say(f, 'FAM-021', 'FAM-060')));
+});

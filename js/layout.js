@@ -34,16 +34,24 @@
       sources.forEach(m => people.get(m).children.forEach(c => { if (!claimed.has(c) && !kidIds.includes(c) && people.get(c).onTree !== false) kidIds.push(c); }));
       kidIds.sort((a, b) => people.get(a).order - people.get(b).order);
       kidIds.forEach(c => { if (!claimed.has(c)) u.kids.push(build(c, gen + 1)); });
+      // the partner's own children (step-family) sit to the right, under the partner's card
+      u.stepKids = [];
+      if (head.blood && u.members.length === 2) {
+        const stepIds = people.get(u.members[1]).children.filter(c => !claimed.has(c) && people.get(c).onTree !== false)
+          .sort((a, b) => people.get(a).order - people.get(b).order);
+        stepIds.forEach(c => { if (!claimed.has(c)) u.stepKids.push(build(c, gen + 1)); });
+      }
       const own = u.members.length * o.cardW + (u.members.length - 1) * o.coupleGap;
       // children with no partner and no children of their own are listed one under the other
-      u.stack = o.stackLeaves && u.kids.length > 1 && u.kids.every(k => k.members.length === 1 && !k.kids.length);
+      u.stack = o.stackLeaves && !u.stepKids.length && u.kids.length > 1 && u.kids.every(k => k.members.length === 1 && !k.kids.length);
       let kidsW;
       if (u.stack) {
         kidsW = o.cardW + o.stackIndent;
         const h = u.kids.length * o.cardH + (u.kids.length - 1) * o.stackGap;
         rowH[gen + 1] = Math.max(rowH[gen + 1] || o.cardH, h);
       } else {
-        kidsW = u.kids.reduce((s, k) => s + k.width, 0) + Math.max(0, u.kids.length - 1) * gapBetween(u.kids);
+        const all = u.kids.concat(u.stepKids);
+        kidsW = all.reduce((s, k) => s + k.width, 0) + Math.max(0, all.length - 1) * gapBetween(all);
       }
       u.ownW = own; u.kidsW = kidsW;
       u.width = Math.max(own, kidsW);
@@ -66,7 +74,7 @@
       }
       // the line to the children always leaves from the descendant's own card
       const joinX = x0 + o.cardW / 2, joinY = y + o.cardH;
-      if (!u.kids.length) return;
+      if (!u.kids.length && !u.stepKids.length) return;
       const childTop = rowY(gen + 1);
       const busY = childTop - o.rowGap / 2;
       if (u.stack) {
@@ -84,18 +92,25 @@
         return;
       }
       let cx = left + (u.width - u.kidsW) / 2;
-      const gap = gapBetween(u.kids);
+      const all = u.kids.concat(u.stepKids);
+      const gap = gapBetween(all);
       const centres = [];
-      u.kids.forEach(k => {
+      all.forEach(k => {
         place(k, cx, gen + 1);
         const first = nodes.find(n => n.id === k.members[0]);
-        centres.push({ x: first.x + o.cardW / 2, id: k.members[0] });
+        centres.push({ x: first.x + o.cardW / 2, id: k.members[0], step: u.stepKids.includes(k) });
         cx += k.width + gap;
       });
-      const minX = Math.min(joinX, ...centres.map(c => c.x)), maxX = Math.max(joinX, ...centres.map(c => c.x));
-      lines.push({ d: `M ${joinX} ${joinY} V ${busY}`, from: u.members, to: centres.map(c => c.id) });
-      lines.push({ d: `M ${minX} ${busY} H ${maxX}`, from: u.members, to: centres.map(c => c.id) });
-      centres.forEach(c => lines.push({ d: `M ${c.x} ${busY} V ${childTop}`, from: u.members, to: [c.id] }));
+      const drawGroup = (fromX, fromY, group, y) => {
+        if (!group.length) return;
+        const minX = Math.min(fromX, ...group.map(c => c.x)), maxX = Math.max(fromX, ...group.map(c => c.x));
+        lines.push({ d: `M ${fromX} ${fromY} V ${y} H ${minX} M ${minX} ${y} H ${maxX}` });
+        group.forEach(c => lines.push({ d: `M ${c.x} ${y} V ${childTop}` }));
+        group.forEach(c => { const n = nodes.find(m => m.id === c.id); n.busY = y; n.fromX = fromX; n.fromY = fromY; });
+      };
+      drawGroup(joinX, joinY, centres.filter(c => !c.step), busY);
+      const partnerX = x0 + o.cardW + o.coupleGap + o.cardW / 2;
+      drawGroup(partnerX, y + o.cardH, centres.filter(c => c.step), busY - 10);
     }
 
     let cursor = 0;

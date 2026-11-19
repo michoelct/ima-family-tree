@@ -349,6 +349,7 @@
       (child.otherParents = child.otherParents || []).push(par.id);
       (par.otherKids = par.otherKids || []).push(child.id);
     }
+    const isPartner = x => !blood.has(x.id) && !!x.spouse && blood.has(x.spouse);
     parentRefs.forEach((refs, cid) => {
       const child = people.get(cid);
       const bloodParents = refs.filter(r => r.person && blood.has(r.person.id)).map(r => r.person);
@@ -362,7 +363,14 @@
           if (partner && norm(partner.name) === norm(ref)) return linkParent(child, partner);
           return; // any other parent without a row is left out of the app
         }
-        // not a descendant (yet): keep every named parent so the branch can join up later
+        // a descendant's partner's own child (owner 2026-11-20, option A): drawn under the partner as part of the family
+        const partnerParent = refs.map(r => r.person).find(x => x && isPartner(x));
+        if (partnerParent) {
+          if (person && person.id === partnerParent.id) { linkParent(child, person); child.stepOf = person.id; }
+          else if (person) linkOther(child, person);
+          return; // their other parent without a row is left out of the app
+        }
+        // not linked (yet): keep every named parent so the branch can join up later
         linkParent(child, person || placeholder(ref, child, 'parent'));
       });
     });
