@@ -131,9 +131,36 @@
       const r = blood(people, A.spouse, B.spouse);
       if (r) return { kind: 'inlaw', side: 'both', rel: r.name, word: r.name === 'sibling' ? 'brother / sister-in-law' : null, label: r.name === 'sibling' ? 'brother / sister-in-law' : 'spouse’s ' + r.name + '’s spouse', via: B.spouse, via2: A.spouse, path: [aId].concat(r.path, bId), common: r.common };
     }
+    // a parent who isn't on the tree: related through their children
+    if (B.otherKids && B.otherKids.length) {
+      const best = closestKid(people, aId, B.otherKids, rootId);
+      if (best) return { kind: 'viaChild', side: 'their', kid: best.kid, rel: best.rel, label: kidsLabel(people, B.otherKids) + ' parent', path: (best.rel.path || [aId, best.kid]).concat(bId), common: [] };
+    }
+    if (A.otherKids && A.otherKids.length) {
+      const best = closestKid(people, bId, A.otherKids, rootId);
+      if (best) {
+        const back = relate(people, best.kid, bId, rootId);
+        return { kind: 'viaChild', side: 'mine', kid: best.kid, rel: back, label: back.kind === 'blood' && back.up === 1 && back.down === 0 ? 'your child\u2019s parent' : 'your child\u2019s ' + (back.word || back.label), path: [aId].concat(back.path), common: [] };
+      }
+    }
     // anything else: shortest path through any link
     const path = anyPath(people, aId, bId);
     return { kind: path ? 'marriage' : 'none', label: path ? 'family by marriage' : 'not linked yet', path: path || [aId, bId], common: [] };
+  }
+
+  function closestKid(people, from, kids, rootId) {
+    let best = null;
+    kids.forEach(k => {
+      const rel = k === from ? { kind: 'self', path: [from], label: 'you' } : relate(people, from, k, rootId);
+      if (!rel || rel.kind === 'none') return;
+      const score = rel.kind === 'self' ? 0 : closeness(rel);
+      if (!best || score < best.score) best = { kid: k, rel, score };
+    });
+    return best;
+  }
+  function kidsLabel(people, kids) {
+    const names = kids.map(id => display(people.get(id)));
+    return (names.length > 2 ? names.slice(0, -1).join(', ') + ' & ' + names[names.length - 1] : names.join(' & ')) + '\u2019s';
   }
 
   function anyPath(people, a, b) {
@@ -143,7 +170,7 @@
       const cur = q.shift();
       if (cur === b) break;
       const p = people.get(cur);
-      [].concat(p.parents, p.children, p.spouse ? [p.spouse] : []).forEach(n => { if (!prev.has(n)) { prev.set(n, cur); q.push(n); } });
+      [].concat(p.parents, p.children, p.spouse ? [p.spouse] : [], p.otherKids || [], p.otherParents || []).forEach(n => { if (!prev.has(n)) { prev.set(n, cur); q.push(n); } });
     }
     if (!prev.has(b)) return null;
     const path = [];
@@ -170,6 +197,13 @@
         if (rel.side === 'their') return b + ' is married to ' + poss + ' ' + rel.rel + ', ' + name(rel.via) + '.';
         if (rel.side === 'mine') return b + ' is ' + poss + ' spouse ' + name(rel.via) + '’s ' + rel.rel + '.';
         return b + ' is married to ' + name(rel.via) + ', ' + poss + ' spouse ' + name(rel.via2) + '’s ' + rel.rel + '.';
+      case 'viaChild':
+        if (rel.side === 'their') {
+          if (rel.rel.kind === 'self') return b + ' is ' + poss + ' parent.';
+          return b + ' is the parent of ' + poss + ' ' + (rel.rel.word || rel.rel.label) + ' ' + name(rel.kid) + '.';
+        }
+        if (rel.rel.kind === 'blood' && rel.rel.up === 1 && rel.rel.down === 0) return b + ' is ' + name(rel.kid) + '\u2019s parent too.';
+        return b + ' is ' + poss + ' child ' + name(rel.kid) + '\u2019s ' + (rel.rel.word || rel.rel.label) + '.';
       case 'friend': return B.kind === 'friend' ? b + ' is a friend of ' + name(rootId) + '.' : b + ' is part of ' + name(rootId) + '’s family.';
       case 'marriage': return b + ' and ' + subj + ' are family by marriage.';
       default: return b + ' isn’t linked to ' + subj + ' in the sheet yet.';
@@ -193,6 +227,7 @@
     if (rel.kind === 'blood') return rel.up + rel.down;
     if (rel.kind === 'inlaw') return rel.path.length;
     if (rel.kind === 'friend') return 50;
+    if (rel.kind === 'viaChild') return (rel.rel.kind === 'self' ? 1 : closeness(rel.rel) + 1);
     return 90;
   }
 

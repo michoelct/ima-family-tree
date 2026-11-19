@@ -158,7 +158,6 @@
 
     lay.rows.forEach(r => cards.append(el('div', { class: 'row-label', style: `left:12px;top:${PADY + r.y + o.cardH / 2 - 8}px`, text: 'Gen ' + r.gen + (GEN_NAMES[r.gen] ? ' · ' + GEN_NAMES[r.gen] : '') })));
     lay.unlinked.forEach((u, i) => { if (i === 0) cards.append(el('div', { class: 'unlinked-label', style: `left:${PADX + u.x}px;top:${PADY + (u.gen - 1) * (o.cardH + o.rowGap) - 26}px`, text: 'Not linked to ' + cfg.rootTitle + ' yet' })); });
-    lay.marriages.forEach(m => cards.append(el('div', { class: 'ring', style: `left:${PADX + (m.x1 + m.x2) / 2}px;top:${PADY + m.y}px`, title: 'Married', 'aria-hidden': 'true', text: '💍' })));
 
     lay.nodes.forEach(n => {
       const p = fam.people.get(n.id);
@@ -393,6 +392,8 @@
     if (p.kind === 'friend') where = 'Friend of ' + display(root);
     else if (p.id === fam.rootId) where = 'Where the whole tree begins';
     else if (p.kind === 'placeholder') where = 'Not in the sheet yet';
+    else if (p.otherParent) where = 'Family · parent of ' + p.otherKids.map(k => display(fam.people.get(k))).join(' & ');
+    else if (p.familyGuest) where = 'Family';
     else if (root && p.gen) {
       const r = FT.relate(fam.people, fam.rootId, p.id, fam.rootId);
       where = 'Generation ' + p.gen + (r && r.kind !== 'none' && r.kind !== 'marriage' ? ' · ' + display(root) + '’s ' + (r.word || r.label) : '');
@@ -420,15 +421,15 @@
       if (p.story) facts.append(el('div', { class: 'fact' }, el('span', { text: 'Their story' }), el('div', { class: 'story', text: p.story })));
     } else {
       if (p.parents.length) facts.append(el('div', { class: 'fact' }, el('span', { text: 'Parents' }), chips(p.parents)));
-      if (p.spouse) facts.append(el('div', { class: 'fact' }, el('span', { text: 'Married to' }), chips([p.spouse])));
+      if (p.spouse) facts.append(el('div', { class: 'fact' }, el('span', { text: 'Spouse' }), chips([p.spouse])));
       const sibs = new Set();
-      p.parents.forEach(pid => fam.people.get(pid).children.forEach(c => { if (c !== id) sibs.add(c); }));
+      p.parents.filter(pid => fam.people.get(pid).blood).forEach(pid => fam.people.get(pid).children.forEach(c => { if (c !== id) sibs.add(c); }));
       if (sibs.size) facts.append(el('div', { class: 'fact' }, el('span', { text: 'Brothers & sisters' }), chips([...sibs].sort((a, b) => fam.people.get(a).order - fam.people.get(b).order))));
-      const kids = new Set(p.children.concat(p.spouse ? fam.people.get(p.spouse).children : []));
+      const kids = new Set(p.children.concat(p.otherKids || []));
       if (kids.size) facts.append(el('div', { class: 'fact' }, el('span', { text: 'Children' }), chips([...kids].sort((a, b) => fam.people.get(a).order - fam.people.get(b).order))));
     }
     body.append(facts);
-    if (p.kind !== 'friend') body.append(el('button', { class: 'btn', onclick: () => { closeSheet(); go('tree'); centerOn(id, 1); } }, 'Find on the tree'));
+    if (p.onTree) body.append(el('button', { class: 'btn', onclick: () => { closeSheet(); go('tree'); centerOn(id, 1); } }, 'Find on the tree'));
     if (id === me) body.append(el('button', { class: 'link', onclick: () => { closeSheet(); clearMe(); go('me'); } }, 'This isn’t me — choose someone else'));
 
     $('scrim').hidden = false; $('sheet').hidden = false;
@@ -449,6 +450,8 @@
   function shortLine(p) {
     if (p.kind === 'friend') return p.how || 'Friend';
     if (p.kind === 'placeholder') return 'Not in the sheet yet';
+    if (p.otherKids && p.otherKids.length && !p.blood && !p.partner) return 'Parent of ' + p.otherKids.map(id => display(fam.people.get(id))).join(' & ');
+    if (p.familyGuest) return 'Family';
     if (p.parents.length) return 'Child of ' + p.parents.map(id => display(fam.people.get(id))).join(' & ');
     if (p.spouse) return 'Married to ' + display(fam.people.get(p.spouse));
     return '';
@@ -497,7 +500,7 @@
         if (input.value.trim() && !found.length) list.append(el('p', { class: 'muted', text: 'Not in the list yet? Add yourself to the Google Sheet — you’ll appear here within a minute.' }));
       };
       input.addEventListener('input', draw);
-      box.append(input, list, sheetLink(), orgLink());
+      box.append(input, list, sheetLink());
       return;
     }
     const p = fam.people.get(me);
@@ -521,12 +524,11 @@
     };
     input.addEventListener('input', draw);
     draw();
-    box.append(input, list, sheetLink(), orgLink());
+    box.append(input, list, sheetLink());
   }
   const sheetLink = () => el('div', { class: 'card-box' }, el('h3', { text: 'Something missing or wrong?' }),
     el('p', { class: 'muted', text: 'Everything here comes from the family Google Sheet. Add or fix your row there and the tree updates on everyone’s phone within a minute.' }),
     el('a', { class: 'btn', href: `https://docs.google.com/spreadsheets/d/${cfg.sheetId}/edit`, target: '_blank', rel: 'noopener' }, 'Open the Google Sheet'));
-  const orgLink = () => el('p', { style: 'margin-top:24px;text-align:center' }, el('a', { class: 'link', href: '#organizer' }, 'Organiser tools (badges, posters, data check)'));
 
   // ---------- organiser ----------
   function appUrl() {
@@ -598,6 +600,8 @@
         const q = el('div', { class: 'q' }); q.append(qrSvg(base + '?p=' + encodeURIComponent(p.id), 4));
         let line;
         if (p.kind === 'friend') line = 'Friend of ' + cfg.rootTitle;
+        else if (p.otherParent) line = p.otherKids.map(k => display(fam.people.get(k))).join(' & ') + '’s parent';
+        else if (p.familyGuest) line = cfg.rootTitle + '’s family';
         else { const r = FT.relate(fam.people, fam.rootId, p.id, fam.rootId); line = p.id === fam.rootId ? 'The birthday girl!' : r && r.kind !== 'none' ? cfg.rootTitle + '’s ' + (r.word || r.label) : 'Generation ' + p.gen; }
         grid.append(el('div', { class: 'pbadge' }, q, el('div', { class: 'who' },
           el('div', { class: 'bn', text: display(p) }), el('div', { class: 'fn', text: p.name }), el('div', { class: 'gl', text: line }),

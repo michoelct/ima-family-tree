@@ -234,8 +234,8 @@
       return { list: [], how: '' };
     }
 
-    /** Picks one person for a reference, or makes a placeholder. */
-    function resolve(ref, from, rel) {
+    /** Finds the one person a reference means, or null. Never creates anyone. */
+    function find(ref, from, rel) {
       if (!tidy(ref)) return null;
       const { memorial } = splitMemorial(ref);
       let { list, how } = candidates(ref);
@@ -246,7 +246,7 @@
       // the expected generation decides next
       const g = from.declaredGen;
       if (list.length > 1 && g) {
-        const want = rel === 'parent' ? g - 1 : rel === 'child' ? g + 1 : g;
+        const want = rel === 'parent' ? g - 1 : g;
         const byGen = list.filter(p => !p.declaredGen || p.declaredGen === want);
         if (byGen.length) list = byGen;
       }
@@ -254,68 +254,45 @@
         list.sort((a, b) => a.order - b.order);
         warn('ambiguous', `"${tidy(ref)}" (${rel} of ${from.name}) could be ${list.map(p => p.name + ' ' + p.id).join(' or ')} — linked to ${list[0].name}. Use the Person ID in the sheet to be sure.`, [from.id, list[0].id]);
       }
-      if (list.length) {
-        const hit = list[0];
-        if (how === 'near') {
-          const k = norm(ref) + '|' + hit.id;
-          if (!spelling.has(k)) spelling.set(k, { ref: tidy(splitMemorial(ref).name), hit, from: [] });
-          spelling.get(k).from.push(from);
-        }
-        return hit;
+      if (!list.length) return null;
+      const hit = list[0];
+      if (how === 'near') {
+        const k = norm(ref) + '|' + hit.id;
+        if (!spelling.has(k)) spelling.set(k, { ref: tidy(splitMemorial(ref).name), hit, from: [] });
+        spelling.get(k).from.push(from);
       }
-      // placeholder — one per distinct name
-      const key = 'auto:' + norm(ref) + (memorial ? ':zl' : '');
+      return hit;
+    }
+
+    /** A card for someone named but without a row (e.g. a spouse z"l). One per name. */
+    function placeholder(ref, from, rel) {
+      const s = splitMemorial(ref);
+      const key = 'auto:' + norm(ref) + (s.memorial ? ':zl' : '');
       const existing = [...people.values()].find(p => p.placeKey === key);
       if (existing) return existing;
-      const s = splitMemorial(ref);
       const ph = addPerson({ id: 'LINK-' + String([...people.values()].filter(p => p.kind === 'placeholder').length + 1).padStart(2, '0'), name: s.name, badge: s.name.split(' ')[0], row: null }, 'placeholder', 'auto');
-      ph.memorial = memorial;
+      ph.memorial = s.memorial;
       ph.placeKey = key;
-      if (!memorial) warn('missing', `${s.name} is named as ${rel} of ${from.name} but has no row in the sheet yet — shown as a placeholder.`, [from.id, ph.id]);
+      if (!s.memorial) warn('missing', `${s.name} is named as ${rel} of ${from.name} but has no row in the sheet yet — shown with a dashed card.`, [from.id, ph.id]);
       return ph;
     }
 
-    function linkParent(child, par) {
-      if (!par || par.id === child.id) return;
-      if (!child.parents.includes(par.id)) child.parents.push(par.id);
-      if (!par.children.includes(child.id)) par.children.push(child.id);
-    }
-    function linkSpouse(a, b, inferred) {
-      if (!a || !b || a.id === b.id) return;
-      if (a.spouse && a.spouse !== b.id) {
-        warn('spouse', `${a.name} is listed with two partners (${people.get(a.spouse).name} and ${b.name}); keeping ${people.get(a.spouse).name}.`, [a.id, b.id]);
-        return;
-      }
-      if (b.spouse && b.spouse !== a.id) {
-        warn('spouse', `${b.name} is listed with two partners (${people.get(b.spouse).name} and ${a.name}); keeping ${people.get(b.spouse).name}.`, [a.id, b.id]);
-        return;
-      }
-      a.spouse = b.id; b.spouse = a.id;
-      if (inferred) { a.spouseInferred = true; b.spouseInferred = true; }
-    }
-
+    /*
+     * FAMILY RULES (owner decision 2026-11-20 — second marriages, separations, step-families):
+     *  - The tree grows only from the root's descendants ("blood").
+     *  - A partner is drawn beside a descendant ONLY when the descendant's own Spouse cell names them.
+     *    Someone who names a descendant who doesn't name them back is family in the lists, not on the tree.
+     *  - A child hangs from their descendant parent. Their other parent counts as a parent (panel,
+     *    relationship words) only if that parent is the descendant's current partner.
+     *  - Any other named parent becomes an "other parent": no card and no line on the tree, no placeholder;
+     *    if they have their own row they get a badge and appear in the lists as "Toss's parent".
+     *  - Two parents are never assumed to be a couple. The app never says ex, divorced or second marriage.
+     */
     const named = [...people.values()].filter(p => p.kind === 'family');
-    named.forEach(p => {
-      if (p.refs.spouse) linkSpouse(p, resolve(p.refs.spouse, p, 'spouse'));
-    });
-    named.forEach(p => {
-      [p.refs.parent1, p.refs.parent2].forEach(r => { if (r) linkParent(p, resolve(r, p, 'parent')); });
-    });
-    // placeholders created as spouses/parents of placeholders don't exist (they have no refs)
-
-    // two parents with no partner on record are a couple
-    people.forEach(p => {
-      if (p.parents.length === 2) {
-        const [a, b] = p.parents.map(id => people.get(id));
-        if (!a.spouse && !b.spouse) linkSpouse(a, b, true);
-      }
-    });
-    spelling.forEach(({ ref, hit, from }) => {
-      const who = from.length > 2 ? `${from.length} rows` : from.map(p => p.name).join(' and ');
-      const own = hit.name;
-      if (from.length >= 2 && hit.source === 'sheet') hit.name = ref; // most rows agree: show their spelling
-      warn('spelling', `${who} write "${ref}", but ${hit.id}'s own row says "${own}". They are linked as one person and shown as "${hit.name}" — fix whichever spelling is wrong in the sheet.`, [hit.id].concat(from.map(p => p.id)));
-    });
+    const parentRefs = new Map();   // child id -> [{ ref, person|null }]
+    named.forEach(p => parentRefs.set(p.id, [p.refs.parent1, p.refs.parent2].filter(Boolean).map(ref => ({ ref, person: find(ref, p, 'parent') }))));
+    const spouseRef = new Map();    // id -> person|null
+    named.forEach(p => { if (p.refs.spouse) spouseRef.set(p.id, find(p.refs.spouse, p, 'spouse')); });
 
     // ---- root ----
     let rootId = null;
@@ -327,6 +304,75 @@
       const g1 = [...people.values()].filter(p => p.kind === 'family' && p.declaredGen === 1 && !p.memorial);
       if (g1.length) rootId = g1[0].id;
     }
+
+    // ---- descendants: anyone whose named parent is a descendant ----
+    const blood = new Set(rootId ? [rootId] : []);
+    let grew = true;
+    while (grew) {
+      grew = false;
+      parentRefs.forEach((refs, cid) => {
+        if (!blood.has(cid) && refs.some(r => r.person && blood.has(r.person.id))) { blood.add(cid); grew = true; }
+      });
+    }
+
+    // ---- partners: named by the descendant ----
+    function linkSpouse(a, b) {
+      if (b.spouse && b.spouse !== a.id) {
+        warn('spouse', `${people.get(b.spouse).name} and ${a.name} both name ${b.name} as their spouse; ${b.name} is shown beside ${people.get(b.spouse).name}. Check the Spouse cells.`, [a.id, b.id]);
+        return;
+      }
+      a.spouse = b.id; b.spouse = a.id;
+    }
+    [...blood].map(id => people.get(id)).sort((a, b) => a.order - b.order).forEach(p => {
+      if (!p.refs.spouse || p.spouse) return;
+      const sp = spouseRef.get(p.id) || placeholder(p.refs.spouse, p, 'spouse');
+      if (sp && sp.id !== p.id) linkSpouse(p, sp);
+    });
+    named.forEach(p => {
+      if (blood.has(p.id) || p.spouse) return;
+      const sp = spouseRef.get(p.id);
+      if (sp && blood.has(sp.id) && sp.spouse !== p.id) {
+        warn('partner', `${p.name} is listed as family and gets a badge, but has no card on the tree. Only the partner named in a descendant's own Spouse cell is drawn beside them.`, [p.id]);
+      }
+      // two non-descendants who name each other stay a couple (e.g. a branch not linked yet)
+      if (sp && !blood.has(sp.id) && !sp.spouse && spouseRef.get(sp.id) === p) linkSpouse(p, sp);
+    });
+
+    // ---- parents ----
+    function linkParent(child, par) {
+      if (!par || par.id === child.id) return;
+      if (!child.parents.includes(par.id)) child.parents.push(par.id);
+      if (!par.children.includes(child.id)) par.children.push(child.id);
+    }
+    function linkOther(child, par) {
+      if (!par || par.id === child.id) return;
+      (child.otherParents = child.otherParents || []).push(par.id);
+      (par.otherKids = par.otherKids || []).push(child.id);
+    }
+    parentRefs.forEach((refs, cid) => {
+      const child = people.get(cid);
+      const bloodParents = refs.filter(r => r.person && blood.has(r.person.id)).map(r => r.person);
+      refs.forEach(({ ref, person }) => {
+        if (bloodParents.length) {
+          if (person && blood.has(person.id)) return linkParent(child, person);
+          if (person && bloodParents.some(bp => bp.spouse === person.id)) return linkParent(child, person);
+          if (person) return linkOther(child, person);
+          // not in the sheet: if it names the descendant's partner (e.g. their placeholder), use them
+          const partner = bloodParents.map(bp => bp.spouse && people.get(bp.spouse)).find(Boolean);
+          if (partner && norm(partner.name) === norm(ref)) return linkParent(child, partner);
+          return; // any other parent without a row is left out of the app
+        }
+        // not a descendant (yet): keep every named parent so the branch can join up later
+        linkParent(child, person || placeholder(ref, child, 'parent'));
+      });
+    });
+
+    spelling.forEach(({ ref, hit, from }) => {
+      const who = from.length > 2 ? `${from.length} rows` : from.map(p => p.name).join(' and ');
+      const own = hit.name;
+      if (from.length >= 2 && hit.source === 'sheet') hit.name = ref; // most rows agree: show their spelling
+      warn('spelling', `${who} write "${ref}", but ${hit.id}'s own row says "${own}". They are linked as one person and shown as "${hit.name}" — fix whichever spelling is wrong in the sheet.`, [hit.id].concat(from.map(p => p.id)));
+    });
 
     // ---- generations from the links (root = 1) ----
     if (rootId) {
@@ -341,30 +387,34 @@
       }
     }
     people.forEach(p => {
-      if (p.kind === 'friend') return;
-      if (p.gen == null) {
-        p.gen = p.declaredGen || null;
-        if (p.kind === 'family' && rootId) warn('unlinked', `${p.name} is not linked to ${people.get(rootId).name} yet — check their parent or spouse names.`, [p.id]);
-      } else if (p.declaredGen && p.declaredGen !== p.gen && p.kind === 'family') {
-        warn('generation', `${p.name} chose generation ${p.declaredGen}, but their family links put them in generation ${p.gen}. The tree uses ${p.gen}.`, [p.id]);
+      // other parents sit in their children's parents' generation
+      if (p.gen == null && p.otherKids) {
+        const g = Math.min(...p.otherKids.map(id => people.get(id).gen).filter(x => x != null));
+        if (isFinite(g)) p.gen = g - 1;
       }
-    });
-    // placeholders that are spouses of nobody and parents of a placeholder chain: guess generation
-    people.forEach(p => {
+      const claimed = spouseRef.get(p.id);
+      if (p.gen == null && claimed && blood.has(claimed.id)) p.gen = claimed.gen;
       if (p.gen == null && p.kind === 'placeholder') {
         const kid = p.children.map(id => people.get(id)).find(c => c.gen != null);
         if (kid) p.gen = kid.gen - 1;
         else if (p.spouse && people.get(p.spouse).gen != null) p.gen = people.get(p.spouse).gen;
       }
     });
-
-    // blood descendant of the root, or married in
-    if (rootId) {
-      const blood = new Set([rootId]);
-      const q = [rootId];
-      while (q.length) people.get(q.shift()).children.forEach(id => { if (!blood.has(id)) { blood.add(id); q.push(id); } });
-      people.forEach(p => { p.blood = blood.has(p.id); });
-    }
+    people.forEach(p => {
+      p.blood = blood.has(p.id);
+      p.partner = !p.blood && !!p.spouse && blood.has(p.spouse);
+      const claims = !!(spouseRef.get(p.id) && blood.has(spouseRef.get(p.id).id));
+      p.otherParent = !p.blood && !p.partner && !!(p.otherKids && p.otherKids.length);
+      p.familyGuest = !p.blood && !p.partner && (p.otherParent || claims); // in the lists, not on the tree
+      p.onTree = p.kind !== 'friend' && !p.familyGuest;
+      if (p.kind === 'friend') return;
+      if (p.gen == null) {
+        p.gen = p.declaredGen || null;
+        if (p.kind === 'family' && rootId) warn('unlinked', `${p.name} is not linked to ${people.get(rootId).name} yet — check their parent or spouse names.`, [p.id]);
+      } else if (p.declaredGen && p.declaredGen !== p.gen && p.kind === 'family' && p.onTree) {
+        warn('generation', `${p.name} chose generation ${p.declaredGen}, but their family links put them in generation ${p.gen}. The tree uses ${p.gen}.`, [p.id]);
+      }
+    });
 
     return { people, rootId, warnings };
   }

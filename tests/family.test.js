@@ -68,3 +68,30 @@ test('layout places everyone once without overlaps', () => {
     if (a.id < b.id) assert.ok(Math.abs(a.y - b.y) >= o.cardH || Math.abs(a.x - b.x) >= o.cardW, a.id + ' overlaps ' + b.id);
   }));
 });
+
+test('separated parents and a new partner: nobody is drawn as an ex, children hang from the descendant', () => {
+  const r = [H,
+    ['FAM-010', 'Shulamit Feder', 'Ima', 'Family Member', '1', '', '', ''],
+    ['FAM-009', 'Sara Chaimovitz', 'Sara', 'Family Member', '2', 'Shulamit Feder', '', ''],
+    ['FAM-001', 'Michoel Chaimovitz', 'Michoel', 'Family Member', '3', 'Sara Chaimovitz', '', 'Dana Chaimovitz'],
+    ['FAM-050', 'Dana Chaimovitz', 'Dana', 'Spouse / Partner', '3', '', '', 'Michoel Chaimovitz'],
+    ['FAM-051', 'Ruth Levi', 'Ruth', 'Spouse / Partner', '3', '', '', 'Michoel Chaimovitz'],
+    ['FAM-002', 'Nosson Tzvi Chaimovitz', 'Toss', 'Family Member', '4', 'Michoel Chaimovitz', 'Ruth Levi', ''],
+    ['FAM-003', 'Naomi Chaimovitz', 'Naomi', 'Family Member', '4', 'Michoel Chaimovitz', 'Someone Not In Sheet', '']
+  ];
+  const f = FT.buildFamily({ familyRows: r, friendRows: [], rootName: 'Shulamit Feder' });
+  const P = id => f.people.get(id);
+  assert.strictEqual(P('FAM-001').spouse, 'FAM-050', 'shown beside Michoel: the partner his own row names');
+  assert.strictEqual(P('FAM-051').onTree, false, 'the other parent has no card on the tree');
+  assert.ok(P('FAM-051').otherParent);
+  assert.deepStrictEqual(P('FAM-002').parents, ['FAM-001'], 'Toss hangs from Michoel only');
+  assert.ok(![...f.people.values()].some(p => /someone/i.test(p.name)), 'a parent with no row is not invented');
+  const L = FT.layoutTree(f.people, f.rootId);
+  assert.ok(!L.nodes.some(n => n.id === 'FAM-051'));
+  assert.strictEqual(say(f, 'FAM-002', 'FAM-051'), 'Ruth is your parent.');
+  assert.strictEqual(say(f, 'FAM-009', 'FAM-051'), 'Ruth is the parent of your grandchild Toss.');
+  assert.strictEqual(say(f, 'FAM-051', 'FAM-001'), 'Michoel is Toss’s parent too.');
+  assert.strictEqual(say(f, 'FAM-050', 'FAM-002'), 'Toss is your spouse Michoel’s child.');
+  assert.ok(f.warnings.some(w => w.kind === 'partner'), 'organiser is told why Ruth is not beside Michoel');
+  assert.ok(!f.warnings.map(w => w.text).join(' ').match(/\b(ex|divorc)/i));
+});

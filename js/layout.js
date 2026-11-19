@@ -20,7 +20,7 @@
     function makeUnit(id) {
       const p = people.get(id);
       const members = [id];
-      if (p.spouse && !claimed.has(p.spouse)) members.push(p.spouse);
+      if (p.spouse && !claimed.has(p.spouse) && people.get(p.spouse).onTree !== false) members.push(p.spouse);
       members.forEach(m => claimed.add(m));
       return { members, kids: [], width: 0 };
     }
@@ -28,7 +28,10 @@
     function build(id, gen) {
       const u = makeUnit(id);
       const kidIds = [];
-      u.members.forEach(m => people.get(m).children.forEach(c => { if (!claimed.has(c) && !kidIds.includes(c)) kidIds.push(c); }));
+      // children hang from the descendant (the unit's first card); a partner's own children are not drawn here
+      const head = people.get(u.members[0]);
+      const sources = head.blood || u.members.length === 1 ? [u.members[0]] : u.members;
+      sources.forEach(m => people.get(m).children.forEach(c => { if (!claimed.has(c) && !kidIds.includes(c) && people.get(c).onTree !== false) kidIds.push(c); }));
       kidIds.sort((a, b) => people.get(a).order - people.get(b).order);
       kidIds.forEach(c => { if (!claimed.has(c)) u.kids.push(build(c, gen + 1)); });
       const own = u.members.length * o.cardW + (u.members.length - 1) * o.coupleGap;
@@ -57,14 +60,12 @@
         nodes.push({ id: m, x, y, gen });
         placed.add(m);
       });
-      let joinX, joinY;
       if (u.members.length === 2) {
         const x1 = x0 + o.cardW, x2 = x0 + o.cardW + o.coupleGap;
         marriages.push({ x1, x2, y: y + o.cardH / 2, a: u.members[0], b: u.members[1] });
-        joinX = (x1 + x2) / 2; joinY = y + o.cardH / 2;
-      } else {
-        joinX = x0 + o.cardW / 2; joinY = y + o.cardH;
       }
+      // the line to the children always leaves from the descendant's own card
+      const joinX = x0 + o.cardW / 2, joinY = y + o.cardH;
       if (!u.kids.length) return;
       const childTop = rowY(gen + 1);
       const busY = childTop - o.rowGap / 2;
@@ -101,7 +102,7 @@
     const trees = [];
     if (rootId && people.has(rootId)) trees.push(rootId);
     // anyone not reachable from the root becomes its own small tree to the right
-    const rest = [...people.values()].filter(p => p.kind !== 'friend').sort((a, b) => a.order - b.order);
+    const rest = [...people.values()].filter(p => p.kind !== 'friend' && p.onTree !== false).sort((a, b) => a.order - b.order);
     const units = [];
     trees.forEach(t => units.push({ u: build(t, people.get(t).gen || 1), gen: people.get(t).gen || 1, main: true }));
     rest.forEach(p => {
