@@ -162,7 +162,7 @@
     lay.nodes.forEach(n => {
       const p = fam.people.get(n.id);
       const label = display(p) + zl(p) + ', ' + p.name + (p.id === me ? ' (you)' : '');
-      const b = el('button', { class: cardClass(p), 'data-id': p.id, style: `left:${PADX + n.x}px;top:${PADY + n.y}px;width:${o.cardW}px;height:${o.cardH}px`, 'aria-label': label, onclick: () => openPerson(p.id) },
+      const b = el('button', { class: cardClass(p), 'data-id': p.id, style: `left:${PADX + n.x}px;top:${PADY + n.y}px;width:${o.cardW}px;height:${o.cardH}px`, 'aria-label': label, onclick: () => tapPerson(p.id) },
         el('div', { class: 'badge' }, display(p), p.memorial ? el('span', { class: 'zl', text: 'z”l' }) : null),
         el('div', { class: 'full', text: p.kind === 'placeholder' ? p.name + ' · not in the sheet yet' : p.name }));
       cards.append(b);
@@ -181,10 +181,12 @@
   function zoomBy(f) { const r = vp.getBoundingClientRect(); zoomAt(r.width / 2, r.height / 2, t.k * f); }
   function fitBox(x0, y0, x1, y1, maxK) {
     const r = vp.getBoundingClientRect();
-    const side = window.innerWidth >= 760 && !$('sheet').hidden ? $('sheet').offsetWidth : 0; // desktop panel covers the right
-    const w = r.width - side;
-    const k = clampK(Math.min((w - 40) / (x1 - x0), (r.height - 40) / (y1 - y0), maxK || 1));
-    t.k = k; t.x = (w - (x1 - x0) * k) / 2 - x0 * k; t.y = (r.height - (y1 - y0) * k) / 2 - y0 * k; apply();
+    const open = !$('sheet').hidden;
+    const side = open && window.innerWidth >= 760 ? $('sheet').offsetWidth : 0; // desktop panel covers the right
+    const below = open && window.innerWidth < 760 ? Math.max(0, r.bottom - $('sheet').getBoundingClientRect().top) : 0; // phone panel covers the bottom
+    const w = r.width - side, h = Math.max(140, r.height - below);
+    const k = clampK(Math.min((w - 40) / (x1 - x0), (h - 30) / (y1 - y0), maxK || 1));
+    t.k = k; t.x = (w - (x1 - x0) * k) / 2 - x0 * k; t.y = (h - (y1 - y0) * k) / 2 - y0 * k; apply();
   }
   function fitAll() { fitBox(0, 0, lay.width + PADX + 60, lay.height + PADY + 60, 1); }
   function centerOn(id, k) {
@@ -371,11 +373,24 @@
       common ? el('p', { class: 'sub', text: common }) : null,
       rel.note ? el('p', { class: 'sub', text: rel.note }) : null,
       rel.path.length > 1 ? chain : null,
-      rel.path.length > 1 ? el('button', { class: 'btn gold', onclick: () => { closeSheet(); go('tree'); setPath(a, b); } }, '🌳 Show the line on the tree') : null);
+      rel.path.length > 1 ? el('button', { class: 'btn gold', onclick: () => { closeSheet(); go('tree'); setPath(a, b); } }, '🌳 See the whole line') : null);
   }
 
   function chips(ids) {
-    return el('div', { class: 'chips' }, ids.map(id => { const p = fam.people.get(id); return el('button', { class: 'pchip', onclick: () => openPerson(id) }, display(p) + zl(p)); }));
+    return el('div', { class: 'chips' }, ids.map(id => { const p = fam.people.get(id); return el('button', { class: 'pchip', onclick: () => showPerson(id) }, display(p) + zl(p)); }));
+  }
+
+  const onTreeView = () => $('view-tree').classList.contains('on');
+  /** Tapping someone: open their panel and, if we know who you are, light up the line between you at once. */
+  /** From a list or a name chip: same as scanning their badge — go to the tree and light up the line. */
+  function showPerson(id) {
+    if (me && id !== me) go('tree');
+    tapPerson(id);
+  }
+  function tapPerson(id) {
+    openPerson(id);
+    if (me && id !== me) setPath(me, id);
+    else if (id === me) clearPath();
   }
 
   function openPerson(id, keepScroll) {
@@ -409,7 +424,12 @@
         [...fam.people.values()].filter(x => x.id !== id && x.kind !== 'placeholder').sort((a, b) => display(a).localeCompare(display(b)))
           .map(x => el('option', { value: x.id, text: display(x) + ' — ' + x.name })));
       const slot = el('div');
-      sel.onchange = () => { slot.textContent = ''; if (sel.value) { const box = relBox(sel.value, id, false); if (box) slot.append(box); } };
+      sel.onchange = () => {
+        slot.textContent = '';
+        if (!sel.value) return clearPath();
+        const box = relBox(sel.value, id, false); if (box) slot.append(box);
+        if (onTreeView()) setPath(sel.value, id);
+      };
       if (p.kind !== 'placeholder' && !p.memorial) body.append(el('button', { class: 'btn primary', onclick: () => { setMe(id); openPerson(id); toast('Hi ' + display(p) + '! Tap anyone to see how you’re related.'); } }, 'This is me'));
       body.append(el('div', { style: 'margin-top:14px' }, sel), slot);
     }
@@ -431,6 +451,8 @@
     if (p.onTree) body.append(el('button', { class: 'btn', onclick: () => { closeSheet(); go('tree'); centerOn(id, 1); } }, 'Find on the tree'));
     if (id === me) body.append(el('button', { class: 'link', onclick: () => { closeSheet(); clearMe(); go('me'); } }, 'This isn’t me — choose someone else'));
 
+    // on the tree the backdrop stays see-through, so the lit-up line is visible above the panel
+    $('scrim').classList.toggle('clear', onTreeView());
     $('scrim').hidden = false; $('sheet').hidden = false;
     $('sheet').scrollTop = keepScroll ? scroll : 0;
     if (!keepScroll) $('sheetClose').focus();
@@ -441,7 +463,7 @@
 
   // ---------- everyone ----------
   function personRow(p, tag, onclick) {
-    return el('button', { class: 'person-row', onclick: onclick || (() => openPerson(p.id)) },
+    return el('button', { class: 'person-row', onclick: onclick || (() => showPerson(p.id)) },
       el('div', { class: 'avatar' + (p.kind === 'friend' ? ' friend' : '') + (p.memorial ? ' memorial' : ''), text: initials(p), 'aria-hidden': 'true' }),
       el('div', { class: 'pr-main' }, el('b', {}, display(p) + zl(p)), el('small', { text: p.name })),
       tag ? el('span', { class: 'rel-tag', text: tag }) : null);

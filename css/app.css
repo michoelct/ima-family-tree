@@ -135,7 +135,8 @@ input:focus-visible, select:focus-visible, button:focus-visible { outline: 3px s
 
 /* ---------- person sheet ---------- */
 .scrim { position: fixed; inset: 0; background: rgba(42,18,29,.4); z-index: 40; }
-.sheet { position: fixed; z-index: 41; left: 0; right: 0; bottom: 0; max-height: 86dvh; overflow-y: auto; background: var(--paper);
+.scrim.clear { background: transparent; }
+.sheet { position: fixed; z-index: 41; left: 0; right: 0; bottom: 0; max-height: 58dvh; overflow-y: auto; background: var(--paper);
   border-radius: 22px 22px 0 0; padding: 22px 18px calc(22px + env(safe-area-inset-bottom)); box-shadow: 0 -20px 50px -20px rgba(42,18,29,.5); }
 @media (min-width: 760px) {
   .sheet { left: auto; top: var(--top-h); width: 420px; max-height: none; border-radius: 0; border-left: 1px solid var(--plum-100); }
