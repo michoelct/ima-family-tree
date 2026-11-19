@@ -1,5 +1,5 @@
 {
- "fetchedAt": "2026-11-19T23:07:43.858Z",
+ "fetchedAt": "2026-11-19T23:21:58.548Z",
  "familyRows": [
   [
    "Person ID",
@@ -289,7 +289,7 @@
    "3 - Grandchildren",
    "Eli Feder",
    "Linda Feder",
-   ""
+   "Rivka Feder"
   ],
   [
    "FAM-029",
@@ -453,12 +453,32 @@
   ],
   [
    "FAM-045",
-   "Dovid Chaimovitz",
+   "Dovid Aharon Chaimovitz",
    "Dovid",
    "Family Member (Child / Descendant)",
    "3 - Grandchildren",
    "Sara Chaimovitz ",
+   "Berish Chaimovitz z\"l",
+   "Malka Chaimovitz "
+  ],
+  [
+   "FAM-046",
+   "Malka Chaimovitz ",
+   "Malka",
+   "Spouse / Partner",
+   "3 - Grandchildren",
    "",
+   "",
+   "Dovid Aharon Chaimovitz"
+  ],
+  [
+   "FAM-047",
+   "Yosef Chaim Chaimovitz",
+   "Yosef",
+   "Family Member (Child / Descendant)",
+   "4 - Great-Grandchildren",
+   "Malka Chaimovitz",
+   "Dovid Aharon Chaimovitz",
    ""
   ]
  ],
