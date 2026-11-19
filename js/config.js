@@ -22,7 +22,7 @@ window.FT_CONFIG = {
   // People who are not in the sheet (yet). A row in the sheet with the same
   // name replaces the entry here automatically.
   extras: [
-    { name: 'Simcha Feder z"l', badge: 'Zaida Simcha', spouse: 'Shulamit Feder', gen: 1 },
+    { name: 'Simcha Feder z"l', badge: 'Aba', spouse: 'Shulamit Feder', gen: 1 },
     { name: 'Chana Malca Fass', badge: 'Chana Malca', parent1: 'Shulamit Feder', parent2: 'Simcha Feder z"l', spouse: 'Menachem Tzvi Fass', gen: 2 }
   ]
 };
