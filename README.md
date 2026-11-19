@@ -28,3 +28,8 @@ Badges link to each person's ID (FAM-014). Once badges are printed, don't re-num
 - `js/layout.js`: places the cards on the tree.
 - `js/app.js`: the screens, zoom, live updates and printing.
 - `tests/`: run with `node --test tests/family.test.js`.
+
+## Publishing
+Live at https://michoelct.github.io/ima-family-tree/ (GitHub Pages, from the `main` branch).
+After changing any file in `js/` or `css/`, raise the `?v=` number on the links in `index.html`,
+or phones keep the old copy for up to 10 minutes. Sheet changes need no publishing.
