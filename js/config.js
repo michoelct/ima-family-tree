@@ -23,6 +23,6 @@ window.FT_CONFIG = {
   // name replaces the entry here automatically.
   extras: [
     { name: 'Simcha Feder z"l', badge: 'Aba', spouse: 'Shulamit Feder', gen: 1 },
-    { name: 'Chana Malca Fass', badge: 'Chana Malca', parent1: 'Shulamit Feder', parent2: 'Simcha Feder z"l', spouse: 'Menachem Tzvi Fass', gen: 2 }
+    { name: 'Chana Malca Fass', badge: 'Malca', parent1: 'Shulamit Feder', parent2: 'Simcha Feder z"l', spouse: 'Menachem Tzvi Fass', gen: 2 }
   ]
 };

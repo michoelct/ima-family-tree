@@ -313,13 +313,8 @@
         d += `M ${ax} ${y} H ${bx} `;
       } else if ((A.fromX != null && A.gen > B.gen) || (B.fromX != null && B.gen > A.gen)) {
         const kid = A.gen > B.gen ? A : B;
-        d += `M ${kid.fromX} ${kid.fromY} V ${kid.busY} H ${kid.x + o.cardW / 2} V ${kid.y} `;
-      } else if (A.stacked || B.stacked) {
-        const kid = A.stacked && A.gen > B.gen ? A : B, par = kid === A ? B : A;
-        const pp = fam.people.get(par.id);
-        const sx = pp.spouse && kid.joinX !== par.x + o.cardW / 2 ? kid.joinX : par.x + o.cardW / 2;
-        const sy = sx === kid.joinX && pp.spouse ? par.y + o.cardH / 2 : par.y + o.cardH;
-        d += `M ${sx} ${sy} V ${kid.busY} H ${kid.spineX} V ${kid.y + o.cardH / 2} H ${kid.x} `;
+        if (kid.stacked) d += `M ${kid.fromX} ${kid.fromY} V ${kid.busY} H ${kid.spineX} V ${kid.y + o.cardH / 2} H ${kid.x} `;
+        else d += `M ${kid.fromX} ${kid.fromY} V ${kid.busY} H ${kid.x + o.cardW / 2} V ${kid.y} `;
       } else {
         const top = A.y < B.y ? A : B, bot = A.y < B.y ? B : A;
         const x1 = top.x + o.cardW / 2, y1 = top.y + o.cardH, x2 = bot.x + o.cardW / 2, y2 = bot.y, my = (y1 + y2) / 2;

@@ -72,8 +72,12 @@
         const x1 = x0 + o.cardW, x2 = x0 + o.cardW + o.coupleGap;
         marriages.push({ x1, x2, y: y + o.cardH / 2, a: u.members[0], b: u.members[1] });
       }
-      // the line to the children always leaves from the descendant's own card
-      const joinX = x0 + o.cardW / 2, joinY = y + o.cardH;
+      // The line to the children leaves from between the couple only when the partner is a parent of
+      // every child drawn here (e.g. Ima & Aba). Otherwise it leaves from the descendant's own card,
+      // so a partner is never drawn as the parent of children who are not theirs.
+      const both = u.members.length === 2 && u.kids.length > 0 && u.kids.every(k => people.get(k.members[0]).parents.includes(u.members[1]));
+      const joinX = both ? x0 + o.cardW + o.coupleGap / 2 : x0 + o.cardW / 2;
+      const joinY = both ? y + o.cardH / 2 : y + o.cardH;
       if (!u.kids.length && !u.stepKids.length) return;
       const childTop = rowY(gen + 1);
       const busY = childTop - o.rowGap / 2;
@@ -83,7 +87,7 @@
         let lastMid = childTop;
         u.kids.forEach((k, i) => {
           const y = childTop + i * (o.cardH + o.stackGap);
-          nodes.push({ id: k.members[0], x: stackX, y, gen: gen + 1, stacked: true, spineX, busY, joinX });
+          nodes.push({ id: k.members[0], x: stackX, y, gen: gen + 1, stacked: true, spineX, busY, fromX: joinX, fromY: joinY });
           placed.add(k.members[0]);
           lastMid = y + o.cardH / 2;
           lines.push({ d: `M ${spineX} ${lastMid} H ${stackX}`, from: u.members, to: [k.members[0]] });
