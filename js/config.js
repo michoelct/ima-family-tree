@@ -17,7 +17,7 @@ window.FT_CONFIG = {
 
   // The public address of the app — put inside every QR code.
   // Leave empty to use the address the page is opened from.
-  appUrl: '',
+  appUrl: 'https://michoelct.github.io/ima-family-tree/',
 
   // People who are not in the sheet (yet). A row in the sheet with the same
   // name replaces the entry here automatically.
