@@ -1,0 +1,70 @@
+// Run: node --test tests/
+const test = require('node:test');
+const assert = require('node:assert');
+const FT = Object.assign({}, require('../js/data.js'), require('../js/relations.js'), require('../js/layout.js'));
+
+const H = ['Person ID', 'Full Name (First & Last)', 'Nickname / Badge Name', 'Connection Type', 'Generation', 'Parent 1 (Full Name)', 'Parent 2 (Full Name)', 'Spouse / Partner (Full Name)'];
+const rows = [H,
+  ['FAM-010', 'Shulamit Feder', 'Ima', 'Family Member', '1 - Ima', '', '', 'Simcha Feder (z"l)'],
+  ['FAM-009', 'Sara Chaimovitz ', 'sara', 'Family Member', '2 - Children', 'Shulamit Feder', 'Simcha Feder (z"l)', 'Berish Chaimovitz (z"l)'],
+  ['FAM-018', 'Elimelech Mordechai Feder', 'Eli', 'Family Member', '2 - Children', 'Shulamit Feder', 'Simcha Feder (z"l)', 'Linda Feder'],
+  ['FAM-019', 'Linda Feder', 'Linda', 'Spouse / Partner', '2 - Children', '', '', 'Eli Feder'],
+  ['FAM-001', 'Michoel Chaimovitz', 'Michoel', 'Family Member', '3', 'Sara Chaimovitz', 'Berish Chaimovitz Z""L', 'Ruti Chaimovitz'],
+  ['FAM-008', 'Ruti Chaiomovitz', 'Ruti', 'Spouse / Partner', '3', '', '', 'Michoel Chaimovitz'],
+  ['FAM-028', 'Dov Ber Feder', 'Dovy', 'Family Member', '3', 'Eli Feder', 'Linda Feder', ''],
+  ['FAM-033', 'Simcha Feder', 'Sim', 'Family Member', '4', 'Dovy Feder', '', ''],
+  ['FAM-002', 'Nosson Tzvi Chaimovitz', 'Toss', 'Family Member', '4', 'Michoel Chaimovitz', 'Ruti Chaimovitz', '']
+];
+const fam = () => FT.buildFamily({ familyRows: rows, friendRows: [], rootName: 'Shulamit Feder' });
+const say = (f, a, b) => FT.describe(f.people, FT.relate(f.people, a, b, f.rootId), a, b, true, f.rootId);
+
+test('CSV with quotes, doubled quotes and no final newline', () => {
+  assert.deepStrictEqual(FT.parseCSV('"a","b ""x""",c\n1,"2,3",4'), [['a', 'b "x"', 'c'], ['1', '2,3', '4']]);
+});
+
+test('z"l in any spelling marks a memorial and is removed from the name', () => {
+  for (const s of ['Berish Chaimovitz (z"l)', 'Berish Chaimovitz Z"L', 'Berish Chaimovitz z\'l']) {
+    assert.deepStrictEqual(FT.splitMemorial(s), { name: 'Berish Chaimovitz', memorial: true });
+  }
+  assert.strictEqual(FT.splitMemorial('Zalman Levi').memorial, false);
+});
+
+test('names link through nicknames, typos and z"l namesakes', () => {
+  const f = fam();
+  const p = id => f.people.get(id);
+  assert.strictEqual(p('FAM-019').spouse, 'FAM-018', '"Eli Feder" = Elimelech Mordechai Feder');
+  assert.strictEqual(p('FAM-001').spouse, 'FAM-008', '"Ruti Chaimovitz" = Ruti Chaiomovitz');
+  assert.strictEqual(p('FAM-033').parents[0], 'FAM-028', '"Dovy Feder" = Dov Ber Feder');
+  const zaida = p(p('FAM-010').spouse);
+  assert.ok(zaida.memorial && zaida.id !== 'FAM-033', 'Simcha Feder z"l is not the great-grandson Simcha Feder');
+  assert.strictEqual(p('FAM-009').spouse, p('FAM-001').parents[1], 'both spellings of Berish z"l are one person');
+  assert.strictEqual(p('FAM-033').gen, 4);
+  assert.ok(f.warnings.some(w => w.kind === 'spelling'));
+});
+
+test('relationship sentences', () => {
+  const f = fam();
+  assert.strictEqual(say(f, 'FAM-002', 'FAM-010'), 'Ima is your great-grandparent.');
+  assert.strictEqual(say(f, 'FAM-002', 'FAM-033'), 'Sim is your second cousin.');
+  assert.strictEqual(say(f, 'FAM-001', 'FAM-028'), 'Dovy is your first cousin.');
+  assert.strictEqual(say(f, 'FAM-008', 'FAM-009'), 'Sara is your mother / father-in-law.');
+  assert.strictEqual(say(f, 'FAM-028', 'FAM-008'), 'Ruti is married to your first cousin, Michoel.');
+  assert.strictEqual(say(f, 'FAM-001', 'FAM-018'), 'Eli is your aunt / uncle.');
+});
+
+test('blood relationship names', () => {
+  assert.strictEqual(FT.bloodName(1, 3), 'great-niece / nephew');
+  assert.strictEqual(FT.bloodName(3, 4), 'second cousin once removed');
+  assert.strictEqual(FT.bloodName(4, 2), 'first cousin twice removed');
+  assert.strictEqual(FT.bloodName(0, 4), 'great-great-grandchild');
+});
+
+test('layout places everyone once without overlaps', () => {
+  const f = fam();
+  const L = FT.layoutTree(f.people, f.rootId);
+  assert.strictEqual(new Set(L.nodes.map(n => n.id)).size, f.people.size);
+  const o = L.opts;
+  L.nodes.forEach(a => L.nodes.forEach(b => {
+    if (a.id < b.id) assert.ok(Math.abs(a.y - b.y) >= o.cardH || Math.abs(a.x - b.x) >= o.cardW, a.id + ' overlaps ' + b.id);
+  }));
+});

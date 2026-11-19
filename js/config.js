@@ -1,0 +1,28 @@
+/* Settings for this family tree. Change these, nothing else, to reuse the app. */
+window.FT_CONFIG = {
+  title: "Ima's Family Tree",
+  subtitle: "Shulamit Feder · 5 generations",
+  eventName: "Ima's birthday",
+
+  // The Google Sheet (shared as "Anyone with the link can view")
+  sheetId: '1DeBbOGA-jSEWTtL0OyHcoONSw_z4i_q-KHFWfdpuVfU',
+  familyGid: 1,   // the Family_Tree tab
+  friendsGid: 2,  // the Ima_Friends tab
+
+  rootName: 'Shulamit Feder',   // the person the tree grows from
+  rootTitle: 'Ima',             // what everyone calls her
+
+  // How often an open page checks the sheet for new rows (seconds)
+  refreshSeconds: 45,
+
+  // The public address of the app — put inside every QR code.
+  // Leave empty to use the address the page is opened from.
+  appUrl: '',
+
+  // People who are not in the sheet (yet). A row in the sheet with the same
+  // name replaces the entry here automatically.
+  extras: [
+    { name: 'Simcha Feder z"l', badge: 'Zaida Simcha', spouse: 'Shulamit Feder', gen: 1 },
+    { name: 'Chana Malca Fass', badge: 'Chana Malca', parent1: 'Shulamit Feder', parent2: 'Simcha Feder z"l', spouse: 'Menachem Tzvi Fass', gen: 2 }
+  ]
+};

@@ -1,0 +1,464 @@
+{
+ "fetchedAt": "2026-11-19T22:35:56.479Z",
+ "familyRows": [
+  [
+   "Person ID",
+   "Full Name (First & Last)",
+   "Nickname / Badge Name",
+   "Connection Type",
+   "Generation",
+   "Parent 1 (Full Name)",
+   "Parent 2 (Full Name)",
+   "Spouse / Partner (Full Name)"
+  ],
+  [
+   "FAM-001",
+   "Michoel Chaimovitz ",
+   "Michoel",
+   "Family Member (Child / Descendant)",
+   "3 - Grandchildren",
+   "Sara Chaimovitz ",
+   "Berish Chaimovitz (z\"l)",
+   "Ruti Chaimovitz "
+  ],
+  [
+   "FAM-002",
+   "Nosson Tzvi Chaimovitz ",
+   "Toss ",
+   "Family Member (Child / Descendant)",
+   "4 - Great-Grandchildren",
+   "Michoel Chaimovitz ",
+   "Ruti Chaimovitz ",
+   ""
+  ],
+  [
+   "FAM-003",
+   "Naomi Tziporah  Chaimovitz ",
+   "Naomi",
+   "Family Member (Child / Descendant)",
+   "4 - Great-Grandchildren",
+   "Michoel Chaimovitz ",
+   "Ruti Chaimovitz ",
+   ""
+  ],
+  [
+   "FAM-004",
+   "Chaim Reuven Chaimovitz ",
+   "Groovy",
+   "Family Member (Child / Descendant)",
+   "4 - Great-Grandchildren",
+   "Michoel Chaimovitz ",
+   "Ruti Chaimovitz ",
+   ""
+  ],
+  [
+   "FAM-005",
+   "Rivka Chaimovitz",
+   "Rivki ",
+   "Family Member (Child / Descendant)",
+   "4 - Great-Grandchildren",
+   "Michoel Chaimovitz ",
+   "Ruti Chaimovitz ",
+   ""
+  ],
+  [
+   "FAM-006",
+   "Yosef Yehuda Chaimovitz",
+   "YA YA ",
+   "Family Member (Child / Descendant)",
+   "4 - Great-Grandchildren",
+   "Michoel Chaimovitz ",
+   "Ruti Chaimovitz ",
+   ""
+  ],
+  [
+   "FAM-007",
+   "Simcha Chaimovitz ",
+   "Simcha ",
+   "Family Member (Child / Descendant)",
+   "4 - Great-Grandchildren",
+   "Michoel Chaimovitz ",
+   "Ruti Chaimovitz ",
+   ""
+  ],
+  [
+   "FAM-008",
+   "Ruti Chaiomovitz ",
+   "Ruti ",
+   "Spouse / Partner",
+   "3 - Grandchildren",
+   "",
+   "",
+   "Michoel Chaimovitz "
+  ],
+  [
+   "FAM-009",
+   "Sara Chaimovitz ",
+   "sara ",
+   "Family Member (Child / Descendant)",
+   "2 - Children",
+   "Shulamit Feder",
+   "Simcha Feder (z\"l)",
+   "Berish Chaimovitz (z\"l)"
+  ],
+  [
+   "FAM-010",
+   "Shulamit Feder",
+   "Ima",
+   "Family Member (Child / Descendant)",
+   "1 - Ima / Elders",
+   "",
+   "",
+   "Simcha Feder (z\"l)"
+  ],
+  [
+   "FAM-011",
+   "Rochel Schonbrun",
+   "Rochella",
+   "Family Member (Child / Descendant)",
+   "3 - Grandchildren",
+   "Eli Feder",
+   "Linda Feder",
+   "Shmuel Schonbrun"
+  ],
+  [
+   "FAM-012",
+   "Shmuel Schonbrun",
+   "Shmuel",
+   "Spouse / Partner",
+   "3 - Grandchildren",
+   "",
+   "",
+   "Rochel Schonbrun"
+  ],
+  [
+   "FAM-013",
+   "Menachem Tzvi Schonbrun",
+   "Tzvi",
+   "Family Member (Child / Descendant)",
+   "4 - Great-Grandchildren",
+   "Rochel Schonbrun",
+   "Shmuel Schonbrun",
+   ""
+  ],
+  [
+   "FAM-014",
+   "Tamara Kreindel Newhouse",
+   "Tamara",
+   "Family Member (Child / Descendant)",
+   "4 - Great-Grandchildren",
+   "Rochel Schonbrun",
+   " Shmuel Schonbrun",
+   "Aryeh Newhouse"
+  ],
+  [
+   "FAM-015",
+   "Yehuda Aryeh Newhouse",
+   "Aryeh",
+   "Spouse / Partner",
+   "4 - Great-Grandchildren",
+   "",
+   "",
+   "Tamara Newhouse"
+  ],
+  [
+   "FAM-016",
+   "Avrahom Elchanan Schonbrun",
+   "Avi",
+   "Family Member (Child / Descendant)",
+   "4 - Great-Grandchildren",
+   "Rochel Schonbrun",
+   "Shmuel Schonbrun",
+   ""
+  ],
+  [
+   "FAM-017",
+   "Akiva Schonbrun",
+   "Akiva",
+   "Family Member (Child / Descendant)",
+   "4 - Great-Grandchildren",
+   "Rochel Schonbrun",
+   "Shmuel Schonbrun",
+   ""
+  ],
+  [
+   "FAM-018",
+   "Elimelech Mordechai Feder",
+   "Eli",
+   "Family Member (Child / Descendant)",
+   "2 - Children",
+   "Shulamit Feder",
+   "Simcha Feder (z\"l)",
+   "Linda Feder"
+  ],
+  [
+   "FAM-019",
+   "Linda Feder",
+   "Linda",
+   "Spouse / Partner",
+   "2 - Children",
+   "",
+   "",
+   "Eli Feder"
+  ],
+  [
+   "FAM-020",
+   "Yosef Meir Feder",
+   "Yossi",
+   "Family Member (Child / Descendant)",
+   "3 - Grandchildren",
+   "Eli Feder",
+   "Linda Feder",
+   ""
+  ],
+  [
+   "FAM-021",
+   "Esther Worch",
+   "Esti",
+   "Family Member (Child / Descendant)",
+   "3 - Grandchildren",
+   "Eli Feder ",
+   "Linda Feder",
+   "Mendy Worch"
+  ],
+  [
+   "FAM-022",
+   "Menachem Moshe  Worch",
+   "Mendy",
+   "Spouse / Partner",
+   "3 - Grandchildren",
+   "",
+   "",
+   "Esti Worch"
+  ],
+  [
+   "FAM-023",
+   "Yermia Tzvi Worch",
+   "Tzvi",
+   "Family Member (Child / Descendant)",
+   "4 - Great-Grandchildren",
+   "Esti Worch",
+   "Mendy Worch",
+   ""
+  ],
+  [
+   "FAM-024",
+   "Yehuda Zev Worch",
+   "Zevi",
+   "Family Member (Child / Descendant)",
+   "4 - Great-Grandchildren",
+   "Esti Worch",
+   "Mendy Worch",
+   ""
+  ],
+  [
+   "FAM-025",
+   "Yeshaya Worch",
+   "Shaya",
+   "Family Member (Child / Descendant)",
+   "4 - Great-Grandchildren",
+   "Esti Worch",
+   "Mendy Worch",
+   ""
+  ],
+  [
+   "FAM-026",
+   "Dov Ber Worch",
+   "Dovi",
+   "Family Member (Child / Descendant)",
+   "4 - Great-Grandchildren",
+   "Esti Worch",
+   "Mendy Worch",
+   ""
+  ],
+  [
+   "FAM-027",
+   "Sara Raizel Worch",
+   "Rosie",
+   "Family Member (Child / Descendant)",
+   "4 - Great-Grandchildren",
+   "Esti Worch",
+   "Mendy Worch ",
+   ""
+  ],
+  [
+   "FAM-028",
+   "Dov Ber Feder",
+   "Dovy",
+   "Family Member (Child / Descendant)",
+   "3 - Grandchildren",
+   "Eli Feder",
+   "Linda Feder",
+   ""
+  ],
+  [
+   "FAM-029",
+   "Rivka Feder",
+   "Rivka",
+   "Spouse / Partner",
+   "3 - Grandchildren",
+   "",
+   "",
+   "Dovy Feder"
+  ],
+  [
+   "FAM-030",
+   "Ahuva Feder",
+   "Ahuva",
+   "Family Member (Child / Descendant)",
+   "4 - Great-Grandchildren",
+   "Dovy Feder",
+   "Rivka Feder",
+   ""
+  ],
+  [
+   "FAM-031",
+   "Yehuda Feder",
+   "Yehuda",
+   "Family Member (Child / Descendant)",
+   "4 - Great-Grandchildren",
+   "Dovy Feder",
+   "Rivka Feder",
+   ""
+  ],
+  [
+   "FAM-032",
+   "Raizel Feder",
+   "Rosie",
+   "Family Member (Child / Descendant)",
+   "4 - Great-Grandchildren",
+   "Dovy Feder",
+   "Rivka Feder",
+   ""
+  ],
+  [
+   "FAM-033",
+   "Simcha Feder",
+   "Sim",
+   "Family Member (Child / Descendant)",
+   "4 - Great-Grandchildren",
+   "Dovy Feder",
+   "Rivka Feder",
+   ""
+  ],
+  [
+   "FAM-034",
+   "Meira Feder",
+   "Meira",
+   "Family Member (Child / Descendant)",
+   "4 - Great-Grandchildren",
+   "Dovy Feder",
+   "Rivka Feder",
+   ""
+  ],
+  [
+   "FAM-035",
+   "Esther Tova Exler",
+   "ET",
+   "Family Member (Child / Descendant)",
+   "3 - Grandchildren",
+   "Sara Chaimovitz",
+   "Berish Chaimovitz Z\"L",
+   ""
+  ],
+  [
+   "FAM-036",
+   "Chaya Exler",
+   "Chaya",
+   "Family Member (Child / Descendant)",
+   "4 - Great-Grandchildren",
+   "ET Exler",
+   "",
+   ""
+  ],
+  [
+   "FAM-037",
+   "Chana Riva Exler",
+   "Riva",
+   "Family Member (Child / Descendant)",
+   "4 - Great-Grandchildren",
+   "ET Exler",
+   "",
+   ""
+  ],
+  [
+   "FAM-038",
+   "Hencha Leah Arem",
+   "Leah",
+   "Family Member (Child / Descendant)",
+   "3 - Grandchildren",
+   "Menachem Tzvi Fass",
+   "Chana Malca Fass",
+   "Yehuda Arem"
+  ],
+  [
+   "FAM-039",
+   "Yehuda Arem",
+   "Yudi",
+   "Spouse / Partner",
+   "3 - Grandchildren",
+   "",
+   "",
+   "Hencha Leah Arem"
+  ],
+  [
+   "FAM-040",
+   "Faiga Shaindel Arem",
+   "Shay",
+   "Family Member (Child / Descendant)",
+   "4 - Great-Grandchildren",
+   "Yehuda Arem",
+   "Hencha Leah Arem",
+   ""
+  ],
+  [
+   "FAM-041",
+   "Sara Arem",
+   "Sara",
+   "Family Member (Child / Descendant)",
+   "4 - Great-Grandchildren",
+   "Yehuda Arem",
+   "Hencha Leah Arem",
+   ""
+  ],
+  [
+   "FAM-042",
+   "Avraham Arem",
+   "Avi",
+   "Family Member (Child / Descendant)",
+   "4 - Great-Grandchildren",
+   "Yehuda Arem",
+   "Hencha Leah Arem",
+   ""
+  ],
+  [
+   "FAM-043",
+   "Dina Arem",
+   "Dina",
+   "Family Member (Child / Descendant)",
+   "4 - Great-Grandchildren",
+   "Yehuda Arem",
+   "Hencha Leah Arem",
+   ""
+  ],
+  [
+   "FAM-044",
+   "Simcha Arem",
+   "Sim",
+   "Family Member (Child / Descendant)",
+   "4 - Great-Grandchildren",
+   "Yehuda Arem",
+   "Hencha Leah Arem",
+   ""
+  ]
+ ],
+ "friendRows": [
+  [
+   "Guest ID",
+   "Full Name (First & Last)",
+   "Nickname / Badge Name",
+   "How do you know Ima?",
+   "Connection Story / Details"
+  ]
+ ]
+}
