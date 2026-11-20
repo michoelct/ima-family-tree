@@ -90,7 +90,7 @@
     const family = [...fam.people.values()].filter(p => p.kind !== 'friend');
     const friends = [...fam.people.values()].filter(p => p.kind === 'friend');
     const gens = Math.max(...family.map(p => p.gen || 0));
-    $('appSub').textContent = `${cfg.subtitle ? cfg.subtitle.split('·')[0].trim() + ' · ' : ''}${family.length} family${friends.length ? ' · ' + friends.length + ' friends' : ''} · ${gens} generations`;
+    $('appSub').textContent = `${family.length} people${friends.length ? ' · ' + friends.length + ' friends' : ''} · ${gens} generations`;
   }
 
   // ---------- render all ----------
@@ -136,6 +136,11 @@
     if (me) { c.hidden = false; c.textContent = '🙂 ' + display(fam.people.get(me)); c.onclick = () => openPerson(me); }
     else { c.hidden = false; c.textContent = 'Who are you?'; c.onclick = () => go('me'); }
     $('zoomMe').hidden = !me;
+    // first visit: a welcome card; once you've chosen yourself, one short tip until you've used the tree
+    let helloShut = false; try { helloShut = sessionStorage.getItem('ft.helloShut') === '1'; } catch (e) { /* ignore */ }
+    $('hello').hidden = !!me || helloShut;
+    document.querySelector('.scan-fab').hidden = !$('hello').hidden; // the welcome card has its own scan button
+    $('treeHint').hidden = !me || !!store.get('ft.tipSeen');
   }
 
   // ---------- tree ----------
@@ -204,7 +209,7 @@
     const W = lay.width + PADX + 60, H = lay.height + PADY + 60;
     if (Math.min((r.width - 40) / W, (r.height - 40) / H) >= 0.45) { fitAll(); return; }
     const n = nodeOf(fam.rootId); if (!n) { fitAll(); return; }
-    t.k = 0.8; t.x = r.width / 2 - (PADX + n.x + lay.opts.cardW / 2) * t.k; t.y = 16; apply();
+    t.k = 0.8; t.x = r.width / 2 - (PADX + n.x + lay.opts.cardW / 2) * t.k; t.y = $('hello').hidden ? 16 : 200; apply();
   }
 
   const pts = new Map();
@@ -262,6 +267,10 @@
   $('zoomOut').onclick = () => zoomBy(1 / 1.25);
   $('zoomFit').onclick = () => (path ? fitPath() : fitAll());
   $('zoomMe').onclick = () => { if (me) centerOn(me, 0.9); };
+  $('helloX').onclick = () => { $('hello').hidden = true; document.querySelector('.scan-fab').hidden = false; try { sessionStorage.setItem('ft.helloShut', '1'); } catch (e) { /* ignore */ } };
+  $('helloFind').onclick = () => go('me');
+  const tipSeen = () => { if (!$('treeHint').hidden) { $('treeHint').hidden = true; store.set('ft.tipSeen', true); } };
+  $('hintX').onclick = tipSeen;
   window.addEventListener('resize', () => { if (path) fitPath(); });
 
   // ---------- highlighted line ----------
@@ -363,17 +372,41 @@
     const rel = FT.relate(fam.people, a, b, fam.rootId);
     if (!rel || rel.kind === 'self') return null;
     const common = FT.commonLine(fam.people, rel, you);
-    const chain = el('div', { class: 'chain' });
-    rel.path.forEach((id, i) => {
-      if (i) chain.append(el('span', { class: 'arrow', text: '→' }));
-      chain.append(el('span', { class: 'chip' + (i === 0 ? ' a' : i === rel.path.length - 1 ? ' b' : ''), text: display(fam.people.get(id)) }));
-    });
+    const chain = ladder(rel.path, you);
     return el('div', { class: 'rel-box' },
       el('p', { class: 'sentence', text: FT.describe(fam.people, rel, a, b, you, fam.rootId) }),
       common ? el('p', { class: 'sub', text: common }) : null,
       rel.note ? el('p', { class: 'sub', text: rel.note }) : null,
       rel.path.length > 1 ? chain : null,
       rel.path.length > 1 ? el('button', { class: 'btn gold', onclick: () => { closeSheet(); go('tree'); setPath(a, b); } }, '🌳 See the whole line') : null);
+  }
+
+  /**
+   * A small family ladder for the panel: the person at the top of the line, and the two branches
+   * running down to A (left) and B (right). Readable on a phone even when the two are far apart on the tree.
+   */
+  function ladder(path, you) {
+    const P = id => fam.people.get(id);
+    let top = 0;
+    path.forEach((id, i) => { const g = P(id).gen, tg = P(path[top]).gen; if (g != null && (tg == null || g < tg)) top = i; });
+    const left = path.slice(0, top).reverse();   // from the top down to A
+    const right = path.slice(top + 1);            // from the top down to B
+    const node = (id, cls) => {
+      const p = P(id);
+      const label = id === path[0] && you ? 'You' : display(p);
+      return el('div', { class: 'lad-node ' + (cls || '') }, el('b', { text: label + (p.memorial ? ' z\u201dl' : '') }),
+        id === path[0] && you ? null : el('small', { text: p.name.split(' ')[0] === label ? '' : p.name.split(' ')[0] }));
+    };
+    const leg = (ids, cls) => el('div', { class: 'lad-leg' }, ids.map((id, i) => node(id, i === ids.length - 1 ? cls : '')));
+    const box = el('div', { class: 'ladder', 'aria-label': 'How the line runs' });
+    box.append(node(path[top], top === 0 ? 'a' : top === path.length - 1 ? 'b' : 'apex'));
+    if (left.length || right.length) {
+      const legs = el('div', { class: 'lad-legs' + (left.length && right.length ? ' two' : '') });
+      if (left.length) legs.append(leg(left, 'a'));
+      if (right.length) legs.append(leg(right, 'b'));
+      box.append(legs);
+    }
+    return box;
   }
 
   function chips(ids) {
@@ -388,6 +421,7 @@
     tapPerson(id);
   }
   function tapPerson(id) {
+    tipSeen();
     openPerson(id);
     if (me && id !== me) setPath(me, id);
     else if (id === me) clearPath();
@@ -530,7 +564,8 @@
       el('p', { class: 'muted', text: p.name }),
       el('div', { class: 'row', style: 'display:flex;gap:8px;flex-wrap:wrap;margin-top:8px' },
         el('button', { class: 'btn small', onclick: () => { go('tree'); centerOn(me, 0.9); } }, 'Show me on the tree'),
-        el('button', { class: 'btn small', onclick: () => { clearMe(); } }, 'Not you? Change')));
+        el('button', { class: 'btn small', onclick: () => { clearMe(); } }, 'Not you? Change')),
+      el('button', { class: 'btn primary', onclick: () => openScanner() }, '📷 Scan a badge'));
 
     const others = [...fam.people.values()].filter(x => x.id !== me && x.kind !== 'placeholder')
       .map(x => ({ p: x, r: FT.relate(fam.people, me, x.id, fam.rootId) }))
@@ -682,6 +717,11 @@
     if (location.hash === '#organizer') go('organizer');
     if (!id) return;
     history.replaceState(null, '', location.pathname + location.hash);
+    arriveAt(id);
+  }
+
+  /** A badge was scanned (phone camera or the in-app scanner). */
+  function arriveAt(id) {
     const p = fam.people.get(id);
     if (!p) { toast('We couldn’t find that badge in the list — find your name instead.', 6000); go('me'); return; }
     if (!me) {
@@ -690,13 +730,111 @@
       $('welcomeFull').textContent = p.name;
       $('welcome').hidden = false;
       $('welcomeYes').focus();
-      $('welcomeYes').onclick = () => { $('welcome').hidden = true; setMe(id); go('tree'); centerOn(id, 0.9); toast('Hi ' + display(p) + '! Now scan anyone’s badge — or tap their card — to see how you’re related.', 7000); };
+      $('welcomeYes').onclick = () => { $('welcome').hidden = true; setMe(id); go('tree'); centerOn(id, 0.9); toast('Hi ' + display(p) + '! Now tap “Scan a badge” — or anyone’s card — to see how you’re related.', 7000); };
       $('welcomeNo').onclick = () => { $('welcome').hidden = true; openPerson(id); };
       return;
     }
-    if (id === me) { toast('That’s your own badge 🙂 Scan someone else’s!'); centerOn(me, 0.9); return; }
+    if (id === me) { go('tree'); toast('That’s your own badge 🙂 Scan someone else’s!'); centerOn(me, 0.9); return; }
     go('tree'); openPerson(id); setPath(me, id);
   }
+
+  // ---------- in-app badge scanner ----------
+  // Uses the phone's built-in QR reader where there is one (Android Chrome), else jsQR (iPhone Safari).
+  // jsQR is loaded only when the scanner is first opened, so the page stays light.
+  const scan = { stream: null, timer: null, detector: null, canvas: null, busy: false };
+
+  function loadJsQR() {
+    if (window.jsQR) return Promise.resolve();
+    return new Promise((ok, fail) => {
+      const s = document.createElement('script');
+      s.src = 'js/vendor/jsQR.js?v=1';
+      s.onload = ok; s.onerror = () => fail(new Error('reader'));
+      document.head.append(s);
+    });
+  }
+
+  /** The Person ID inside a scanned code, or '' if it isn't one of our badges. */
+  function badgeIdFrom(text) {
+    try {
+      const u = new URL(text, location.href);
+      const id = (u.searchParams.get('p') || u.searchParams.get('id') || '').toUpperCase();
+      return id;
+    } catch (e) { return ''; }
+  }
+
+  async function openScanner() {
+    closeSheet();
+    $('scanner').hidden = false;
+    $('scanMsg').textContent = 'Starting the camera…';
+    $('scanHelp').hidden = true;
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) return scanFailed('This browser can’t open the camera.');
+    try {
+      scan.stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' } }, audio: false });
+    } catch (e) {
+      return scanFailed(e && e.name === 'NotAllowedError' ? 'The camera wasn’t allowed.' : 'The camera couldn’t be opened.');
+    }
+    if ($('scanner').hidden) return stopScanner(); // closed while the permission question was up
+    const v = $('scanVideo');
+    v.srcObject = scan.stream;
+    try { await v.play(); } catch (e) { /* iOS starts it on the next frame */ }
+    if ('BarcodeDetector' in window) {
+      try { scan.detector = new window.BarcodeDetector({ formats: ['qr_code'] }); } catch (e) { scan.detector = null; }
+    }
+    if (!scan.detector) {
+      try { await loadJsQR(); } catch (e) { return scanFailed('The badge reader didn’t load — check the internet connection.'); }
+    }
+    $('scanMsg').textContent = 'Point at the QR code on a badge';
+    tick();
+  }
+
+  async function tick() {
+    if ($('scanner').hidden) return;
+    const v = $('scanVideo');
+    if (!scan.busy && v.readyState >= 2 && v.videoWidth) {
+      scan.busy = true;
+      try {
+        let text = '';
+        if (scan.detector) {
+          const codes = await scan.detector.detect(v);
+          if (codes.length) text = codes[0].rawValue;
+        } else {
+          const c = scan.canvas || (scan.canvas = document.createElement('canvas'));
+          const w = 480, h = Math.round(v.videoHeight * (w / v.videoWidth));
+          c.width = w; c.height = h;
+          const g = c.getContext('2d', { willReadFrequently: true });
+          g.drawImage(v, 0, 0, w, h);
+          const img = g.getImageData(0, 0, w, h);
+          const code = window.jsQR(img.data, w, h, { inversionAttempts: 'dontInvert' });
+          if (code) text = code.data;
+        }
+        if (text) {
+          const id = badgeIdFrom(text);
+          if (id && fam.people.has(id)) { if (navigator.vibrate) navigator.vibrate(60); stopScanner(); arriveAt(id); return; }
+          $('scanMsg').textContent = id ? 'That badge isn’t in the family list yet.' : 'That’s not a family badge — try another.';
+        }
+      } catch (e) { /* a bad frame — keep going */ }
+      scan.busy = false;
+    }
+    scan.timer = setTimeout(tick, 150);
+  }
+
+  function scanFailed(msg) {
+    $('scanMsg').textContent = msg;
+    $('scanHelp').hidden = false;
+  }
+
+  function stopScanner() {
+    clearTimeout(scan.timer);
+    scan.busy = false;
+    if (scan.stream) scan.stream.getTracks().forEach(t => t.stop());
+    scan.stream = null;
+    $('scanVideo').srcObject = null;
+    $('scanner').hidden = true;
+  }
+  $('scanClose').onclick = stopScanner;
+  $('scanToList').onclick = () => { stopScanner(); go(me ? 'people' : 'me'); };
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden' && !$('scanner').hidden) stopScanner(); });
+  document.querySelectorAll('[data-scan]').forEach(b => b.addEventListener('click', openScanner));
 
   // ---------- go ----------
   $('appTitle').textContent = cfg.title;
