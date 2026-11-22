@@ -301,7 +301,7 @@
     bar.hidden = false;
     [...branchColour.keys()].forEach(id => {
       const p = fam.people.get(id);
-      bar.append(el('button', { class: 'br-chip', style: opt.colours ? `--br:${branchColour.get(id)}` : null, onclick: () => goBranch(id), title: 'Go to ' + display(p) + '’s family' },
+      bar.append(el('button', { class: 'br-chip', style: opt.colours ? `--br:${branchColour.get(id)}` : null, onclick: () => goBranch(id), title: 'Show ' + display(p) + ' on the tree' },
         el('span', { class: 'br-dot' }), display(p)));
     });
   }
@@ -949,7 +949,9 @@
         el('p', { class: 'muted', text: 'Measure the clear slot inside one holder (below the zip strip) and set the card 2–3 mm smaller each way. Print one page and slide a card in before printing them all.' }),
         el('div', { class: 'row' },
           el('button', { class: 'btn primary', onclick: () => printBadges(style.value, num(bw.value, 90), num(bh.value, 64), mast.value) }, '🏷️ Name badges (' + people.length + ')'),
-          el('button', { class: 'btn', onclick: printSign }, '🪧 Table sign (one big QR)')),
+          el('button', { class: 'btn', onclick: () => printSign(style.value, mast.value, false) }, '🪧 Table sign (one big QR)'),
+          el('button', { class: 'btn', onclick: () => printSign(style.value, mast.value, true) }, '🪧 A sign for each family name (' + familyNameGroups().length + ')')),
+        el('p', { class: 'muted', text: 'The signs use the same style as the badges. “A sign for each family name” makes one page per surname on the badges — e.g. The Fass Family Journal — for family tables.' }),
         el('label', { text: 'Tree poster' }), pstyle,
         el('label', { text: 'Paper' }), paper,
         el('button', { class: 'btn', onclick: () => printPoster(paper.value, pstyle.value) }, '🌳 Print the whole tree as a poster')),
@@ -991,9 +993,18 @@
   /** The family name a person goes by: the last word of their name that the parents or spouse also carry
    *  (some rows add a nickname at the end), so a married woman gets her married name. */
   function surnameOf(p) {
+    const cap = w => (w ? w.charAt(0).toUpperCase() + w.slice(1) : w);
     const words = p.name.split(' ');
-    const kin = p.parents.concat(p.spouse ? [p.spouse] : []).map(id => fam.people.get(id)).filter(Boolean).map(k => FT.norm(k.name).split(' '));
-    return words.slice().reverse().find(w => kin.some(k => k.includes(FT.norm(w)))) || words[words.length - 1];
+    const kinWords = p.parents.concat(p.spouse ? [p.spouse] : [], p.children).map(id => fam.people.get(id)).filter(Boolean)
+      .reduce((all, k) => all.concat(k.name.split(' ')), []);
+    const same = words.slice().reverse().find(w => kinWords.some(k => FT.norm(k) === FT.norm(w)));
+    if (same) return cap(same);
+    // a one-letter slip in the sheet (Raninovitz / Rabinovitz): use the husband's, wife's or parents' spelling
+    for (const w of words.slice().reverse()) {
+      const near = kinWords.find(k => FT.norm(w).length > 4 && FT.lev(FT.norm(k), FT.norm(w)) <= 1);
+      if (near) return cap(near);
+    }
+    return cap(words[words.length - 1]);
   }
   function printBadges(style, wMm, hMm, mastMode) {
     const base = appUrl();
@@ -1056,28 +1067,80 @@
     });
   }
   /** The table sign: a newspaper front page with one big QR code, matching the badges. */
-  function printSign() {
+  // The colour key, said gently: the four colours are simply Ima's children (never "<name>'s family").
+  function colourKey() {
+    if (!branchColour.size) return null;
+    return el('div', { class: 'key' }, el('b', { text: 'The colour on each badge: ' + cfg.rootTitle + '’s children' }),
+      el('div', {}, [...branchColour.keys()].map(id => el('span', { style: `--br:${branchColour.get(id)}` }, el('i'), display(fam.people.get(id))))));
+  }
+  // the family names on the badges, grouped by surname (a married woman under her married name)
+  function familyNameGroups() {
+    const g = new Map();
+    badgePeople().filter(p => p.kind !== 'friend').forEach(p => { const n = surnameOf(p), k = FT.norm(n); if (!g.has(k)) g.set(k, { name: n, people: [] }); g.get(k).people.push(p); });
+    return [...g.values()];
+  }
+  /**
+   * The table sign, in the same style as the badges (newspaper, press pass or plain).
+   * perFamily: one sign for each family name on the badges, e.g. "The Fass Family Journal" (by surname, so
+   * nobody is singled out).
+   */
+  function printSign(style, mastMode, perFamily) {
     const base = appUrl();
     const np = cfg.newspaper || {};
+    const date = [np.date, np.occasion].filter(Boolean).join(' · ');
+    const groups = perFamily ? familyNameGroups() : [null];
+    const allNames = familyNameGroups().map(g => g.name);
+    const rainbow = [...branchColour.values()];
+    const ruleBg = list => (list.length > 1 ? `linear-gradient(90deg, ${list.map((c, i) => `${c} ${i / list.length * 100}%, ${c} ${(i + 1) / list.length * 100}%`).join(', ')})` : list[0] || '#d3202a');
     doPrint('p-sign', 'A4 portrait', root => {
-      const q = el('div', { class: 'q' }); q.append(qrSvg(base));
-      root.append(el('div', { class: 'psign' },
-        el('div', { class: 'mast', text: np.masthead || 'The Family Journal' }),
-        el('div', { class: 'dateline' },
-          el('span', { text: np.volume || 'Vol. I' }),
-          el('span', { text: np.edition || 'Special Birthday Edition' }),
-          el('span', { text: np.date || '' })),
-        el('div', { class: 'head', text: 'Extra! Extra! Meet the family' }),
-        el('div', { class: 'sub', text: [np.occasion, cfg.subtitle].filter(Boolean).join(' · ') }),
-        el('div', { class: 'cols' },
+      groups.forEach(g => {
+        const q = el('div', { class: 'q' }); q.append(qrSvg(base));
+        const title = g ? 'The ' + g.name + ' Family Journal' : (mastMode === 'own' ? (np.masthead || 'The Family Journal') : (np.masthead || 'The Family Journal'));
+        // one family's colour when everyone with that name is in one branch, else every colour
+        const cols = g ? [...new Set(g.people.map(p => colourOf(p.id)).filter(Boolean))] : rainbow;
+        const names = g ? 'In this edition: ' + g.people.map(display).join(' · ')
+          : (mastMode === 'own' && allNames.length > 1 ? 'Today’s editions: ' + allNames.join(' · ') : '');
+        const steps = el('div', { class: 'cols' },
           el('div', { class: 'step' }, el('b', { text: '1' }), el('span', { text: 'Open your phone camera and point it at the code.' })),
           el('div', { class: 'step' }, el('b', { text: '2' }), el('span', { text: 'Find your name — or scan your own badge.' })),
-          el('div', { class: 'step' }, el('b', { text: '3' }), el('span', { text: 'Scan anyone’s badge to see how you’re related.' }))),
-        q,
-        el('div', { class: 'url', text: base }),
-        branchColour.size ? el('div', { class: 'key' }, el('b', { text: 'The colour on each badge is the family branch:' }),
-          el('div', {}, [...branchColour.keys()].map(id => el('span', { style: `--br:${branchColour.get(id)}` }, el('i'), display(fam.people.get(id)) + '’s family')))) : null,
-        el('div', { class: 'ribbon', text: np.ribbon || ('Happy Birthday, ' + cfg.rootTitle + '!') })));
+          el('div', { class: 'step' }, el('b', { text: '3' }), el('span', { text: 'Scan anyone’s badge to see how you’re related.' })));
+        const fitTitle = t => ({ style: `--fit:${Math.min(1, 24 / Math.max(24, t.length)).toFixed(3)}` });
+        if (style === 'press') {
+          root.append(el('div', { class: 'psign press' },
+            el('div', { class: 'pbar' }, el('div', { class: 'pword', text: 'PRESS' }), el('div', { class: 'pjournal', text: title })),
+            el('div', { class: 'prule', style: `background:${ruleBg(cols)}` }),
+            el('div', { class: 'head', text: 'Press check-in' }),
+            el('div', { class: 'sub', text: date }),
+            names ? el('div', { class: 'names', text: names }) : null,
+            steps, q,
+            el('div', { class: 'url', text: base }),
+            g ? null : colourKey(),
+            el('div', { class: 'pfoot', text: np.ribbon || ('Happy Birthday, ' + cfg.rootTitle + '!') })));
+        } else if (style === 'plain') {
+          root.append(el('div', { class: 'psign plain' },
+            el('h1', { text: g ? title : cfg.title }),
+            el('p', { class: 'sub', text: date }),
+            names ? el('div', { class: 'names', text: names }) : null,
+            steps, q,
+            el('div', { class: 'url', text: base }),
+            g ? null : colourKey()));
+        } else {
+          root.append(el('div', { class: 'psign' },
+            el('div', Object.assign({ class: 'mast', text: title }, fitTitle(title))),
+            cols.length ? el('div', { class: 'srule', style: `background:${ruleBg(cols)}` }) : null,
+            el('div', { class: 'dateline' },
+              el('span', { text: np.volume || 'Vol. I' }),
+              el('span', { text: np.edition || 'Special Birthday Edition' }),
+              el('span', { text: np.date || '' })),
+            el('div', { class: 'head', text: 'Extra! Extra! Meet the family' }),
+            el('div', { class: 'sub', text: [np.occasion, cfg.subtitle].filter(Boolean).join(' · ') }),
+            names ? el('div', { class: 'names', text: names }) : null,
+            steps, q,
+            el('div', { class: 'url', text: base }),
+            g ? null : colourKey(),
+            el('div', { class: 'ribbon', text: np.ribbon || ('Happy Birthday, ' + cfg.rootTitle + '!') })));
+        }
+      });
     });
   }
   function printPoster(size, style) {
@@ -1104,8 +1167,8 @@
       clone.querySelectorAll('.tog').forEach(c => c.remove());
       const wrap = el('div', { class: 'pposter-wrap', style: `width:${best.W * best.k}px;height:${best.H * best.k}px;margin:0 auto` }, clone);
       root.append(el('h1', { class: 'pposter-title', text: cfg.title }), wrap);
-      if (opt.colours && branchColour.size) root.append(el('div', { class: 'pposter-key' }, [...branchColour.keys()].map(id =>
-        el('span', { style: `--br:${branchColour.get(id)}` }, el('i'), display(fam.people.get(id)) + '’s family'))));
+      if (opt.colours && branchColour.size) root.append(el('div', { class: 'pposter-key' }, el('b', { text: cfg.rootTitle + '’s children:' }), [...branchColour.keys()].map(id =>
+        el('span', { style: `--br:${branchColour.get(id)}` }, el('i'), display(fam.people.get(id))))));
       lay = keepLay; path = keepPath; drawTree(); t = keepT; apply();
     });
   }
