@@ -118,7 +118,7 @@
 
   // ---------------------------------------------------------------- sun view
   function layoutSun(people, rootId, opts) {
-    const o = Object.assign({ cardW: 120, cardH: 44, slotGap: 6, ringGap: 26, coreR: 110, padX: 30, padY: 30, padR: 30 }, opts || {});
+    const o = Object.assign({ cardW: 120, cardH: 44, slotGap: 6, ringGap: 34, bandW: 15, coreR: 110, padX: 30, padY: 30, padR: 30 }, opts || {});
     const P = id => people.get(id);
     const nodes = [], lines = [], marriages = [], labels = [];
     const rootP = P(rootId);
@@ -201,8 +201,24 @@
         lines.push({ d: `M ${pt(from, pm)} L ${pt(to, km)}`, cls: 'sun-link', member: k.members[0], depth: k.depth });
       });
       if (u.depth) {
-        const d1 = u.depth + 1;
-        lines.push({ d: arc(r[d1] - o.ringGap / 2 + 3, r[d1] + o.cardW + o.ringGap / 2 - 3, u.a0 + 0.002, u.a1 - 0.002), cls: 'sun-group', member: u.members[0], depth: u.depth, group: true });
+        const d1 = u.depth + 1, gap = 0.002;
+        const rOut = r[d1] + o.cardW + o.ringGap / 2 - 3;
+        lines.push({ d: arc(r[d1] - o.ringGap / 2 + 3, rOut, u.a0 + gap, u.a1 - gap), cls: 'sun-group', member: u.members[0], depth: u.depth, group: true });
+        // a thin header strip along the outer edge of the brothers and sisters, with their family name
+        const rIn = rOut - o.bandW;
+        lines.push({ d: arc(rIn, rOut, u.a0 + gap, u.a1 - gap), cls: 'sun-band', member: u.members[0], depth: u.depth, group: true });
+        const name = o.familyName ? o.familyName(u.kids.map(k => k.members[0])) : '';
+        if (name) {
+          // text runs along the middle of the strip, always left to right: clockwise over the top half,
+          // anticlockwise under the bottom half (so it is never upside down)
+          const rt = (rIn + rOut) / 2, mid = (u.a0 + u.a1) / 2, len = (u.a1 - u.a0) * rt;
+          const under = Math.sin(mid) > 0;
+          const big = u.a1 - u.a0 > Math.PI ? 1 : 0;
+          const tr = under ? rt + 3.6 : rt - 3.6; // the baseline sits so the letters are centred in the strip
+          const d = under ? `M ${pt(tr, u.a1 - gap)} A ${tr} ${tr} 0 ${big} 0 ${pt(tr, u.a0 + gap)}`
+            : `M ${pt(tr, u.a0 + gap)} A ${tr} ${tr} 0 ${big} 1 ${pt(tr, u.a1 - gap)}`;
+          labels.push({ arc: d, text: name, fits: len > name.length * 7 + 10, member: u.members[0], depth: u.depth });
+        }
       }
     });
     // every slice gets its branch (the root child it grows from)
@@ -212,7 +228,7 @@
       u.kids.forEach((k, i) => {
         const bb = u.depth === 0 ? k.members[0] : b;
         const ks = k.depth === 2 ? i : sh;
-        lines.forEach(l => { if (l.member === k.members[0] && (l.group ? l.depth === k.depth : l.depth === k.depth)) { l.branch = bb; l.shade = ks; } });
+        lines.concat(labels).forEach(l => { if (l.member === k.members[0] && l.depth === k.depth) { l.branch = bb; l.shade = ks; } });
         tag(k, bb, ks);
       });
     };

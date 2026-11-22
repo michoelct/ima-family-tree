@@ -196,6 +196,13 @@
     const m = c.map(v => Math.round(t > 0 ? v + (255 - v) * t : v * (1 + t)));
     return '#' + m.map(v => v.toString(16).padStart(2, '0')).join('');
   }
+  // the family name of a set of brothers and sisters: the surname most of them share (for the Sun strips)
+  function familyName(ids) {
+    const n = new Map();
+    ids.map(id => fam.people.get(id)).filter(Boolean).forEach(p => { const sn = surnameOf(p); n.set(sn, (n.get(sn) || 0) + 1); });
+    const best = [...n.entries()].sort((a, b) => b[1] - a[1])[0];
+    return best ? best[0] : '';
+  }
   function currentMode() { return VIEWS[viewChoice] ? viewChoice : VIEW_DEFAULT[deviceKind()]; }
   function bestChartSplit(vw, vh, hide) {
     const g0 = rootGen();
@@ -216,7 +223,7 @@
       const w = vp.getBoundingClientRect().width || window.innerWidth;
       return FT.layoutFamily(fam.people, focusFor(), { maxW: Math.max(320, Math.min(1100, w - 28)) });
     }
-    if (mode === 'sun') return FT.layoutSun(fam.people, fam.rootId, { centerChild: sunTopId() });
+    if (mode === 'sun') return FT.layoutSun(fam.people, fam.rootId, { centerChild: sunTopId(), familyName });
     return FT.layoutTree(fam.people, fam.rootId, { split: 99, collapsed, centerChild });
   }
   function relayout() { lay = layoutFor(currentMode()); drawTree(); syncViewButtons(); }
@@ -359,13 +366,23 @@
       g.append(svg('path', a));
     });
     lay.marriages.forEach(m => g.append(svg('line', { x1: m.x1, x2: m.x2, y1: m.y, y2: m.y, class: 'wed' })));
+    // the Sun view's family-name strips: text along a curve
+    (lay.labels || []).filter(l => l.arc).forEach((l, i) => {
+      const pid = 'sunArc' + i;
+      g.append(svg('path', { id: pid, d: l.arc, fill: 'none', stroke: 'none' }));
+      if (!l.fits) return;
+      const t = svg('text', { class: 'sun-name', style: `--br:${opt.colours && l.branch ? shadeOf(branchColour.get(l.branch), l.shade) : '#b99aa6'}` });
+      const tp = svg('textPath', { href: '#' + pid, startOffset: '50%', 'text-anchor': 'middle' });
+      tp.textContent = l.text;
+      t.append(tp); g.append(t);
+    });
     lines.append(g);
     lines.append(svg('g', { transform: `translate(${PADX},${PADY})`, id: 'hotLines' }));
 
     lay.rows.forEach(r => cards.append(el('div', { class: 'row-label', style: `left:12px;top:${PADY + r.y + o.cardH / 2 - 8}px`, text: 'Gen ' + r.gen + (GEN_NAMES[r.gen] ? ' · ' + GEN_NAMES[r.gen] : '') })));
     lay.unlinked.forEach((u, i) => { if (i === 0) cards.append(el('div', { class: 'unlinked-label', style: `left:${PADX + u.x}px;top:${PADY + u.y}px`, text: 'Not linked to ' + cfg.rootTitle + ' yet' })); });
 
-    (lay.labels || []).forEach(l => cards.append(el('div', { class: 'sec-label', style: `left:${PADX + l.x}px;top:${PADY + l.y}px`, text: l.text })));
+    (lay.labels || []).filter(l => !l.arc).forEach(l => cards.append(el('div', { class: 'sec-label', style: `left:${PADX + l.x}px;top:${PADY + l.y}px`, text: l.text })));
     if (lay.moreGrand) cards.append(el('div', { class: 'sec-label more', style: `left:${PADX + lay.width / 2}px;top:${PADY + lay.height + 10}px`, text: '+' + lay.moreGrand + ' grandchildren — tap one of the children to see their family' }));
     if (lay.mode === 'family' && lay.focus !== fam.rootId) cards.append(el('button', { class: 'up-btn', style: `left:${PADX + lay.width / 2}px;top:${PADY - 6}px`, onclick: () => setFocus(fam.rootId) }, '↑ Back to ' + display(fam.people.get(fam.rootId))));
 
@@ -1161,7 +1178,7 @@
     let best = null;
     [['landscape', mm[0], mm[1]], ['portrait', mm[1], mm[0]]].forEach(([dir, w, h]) => {
       const pw = (w - 16) * pxPerMm, ph = (h - 16) * pxPerMm - 60;
-      const L = style === 'sun' ? FT.layoutSun(fam.people, fam.rootId, { centerChild: sunTopId() })
+      const L = style === 'sun' ? FT.layoutSun(fam.people, fam.rootId, { centerChild: sunTopId(), familyName })
         : FT.layoutTree(fam.people, fam.rootId, { split: bestChartSplit(pw + 40, ph + 30, new Set()), centerChild: centreFamilyId() });
       const W = L.width + L.opts.padX + L.opts.padR, H = L.height + 2 * L.opts.padY;
       const k = Math.min(pw / W, ph / H);

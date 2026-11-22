@@ -277,6 +277,10 @@ input:focus-visible, select:focus-visible, button:focus-visible { outline: 3px s
 .lines .sun-link { fill: none; stroke: var(--br); stroke-opacity: .45; stroke-width: 1.5; }
 .lines .sun-group { fill: none; stroke: var(--br); stroke-opacity: .7; stroke-width: 1.5; }
 .dim .sun-link, .dim .sun-group { stroke-opacity: .15; }
+.lines .sun-band { fill: var(--br); fill-opacity: .55; stroke: none; }
+.lines .sun-name { font: 700 10px Inter, Arial, sans-serif; letter-spacing: .6px; text-transform: uppercase; fill: #fff; paint-order: stroke; stroke: rgba(0,0,0,.25); stroke-width: .6px; }
+.dim .sun-band { fill-opacity: .2; }
+.dim .sun-name { opacity: .35; }
 .as-sun .card { border-radius: 10px; padding: 3px 8px; gap: 0; transform-origin: 50% 50%; }
 .as-sun .card .badge { font-size: 14px; }
 .as-sun .card .full { font-size: 10px; -webkit-line-clamp: 1; }
