@@ -915,6 +915,7 @@
     pstyle.onchange = () => store.set('ft.posterStyle', pstyle.value);
     const style = el('select', { 'aria-label': 'Badge style' },
       el('option', { value: 'news', text: 'Newspaper style — to slide into badge holders' }),
+      el('option', { value: 'press', text: 'Press pass — a reporter’s badge from the same newspaper' }),
       el('option', { value: 'plain', text: 'Plain — cut out or stick on' }));
     style.value = store.get('ft.badgeStyle') || 'news';
     const num = (v, d) => { const n = parseFloat(v); return n >= 40 && n <= 150 ? n : d; };
@@ -1003,6 +1004,24 @@
         const nm = display(p);
         const size = nm.length > 16 ? 's3' : nm.length > 11 ? 's2' : nm.length > 7 ? 's1' : '';
         const bc = colourOf(p.id);
+        if (style === 'press') {
+          // the press pass the family chose: navy PRESS bar, red rule, the name in big bold letters, a big QR code
+          // the surname: the last word of the name that the parents or spouse also carry (some rows add a nickname at the end)
+          const words = p.name.split(' ');
+          const kin = p.parents.concat(p.spouse ? [p.spouse] : []).map(id => fam.people.get(id)).filter(Boolean).map(k => FT.norm(k.name).split(' '));
+          const surname = words.slice().reverse().find(w => kin.some(k => k.includes(FT.norm(w)))) || words[words.length - 1];
+          const first = nm.split(' ').includes(surname) ? nm.replace(new RegExp('\\s*' + surname.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$'), '') || nm : nm;
+          const longest = Math.max(first.length, surname.length);
+          const fit = longest > 13 ? 'f3' : longest > 10 ? 'f2' : longest > 7 ? 'f1' : '';
+          grid.append(el('div', { class: 'nbadge press', style: `width:${wMm}mm;height:${hMm}mm` },
+            el('div', { class: 'pbar', text: 'PRESS' }),
+            el('div', { class: 'prule' }),
+            el('div', { class: 'pbody' },
+              el('div', { class: 'pname ' + fit }, el('span', { text: first }), surname && surname !== first ? el('span', { text: surname }) : null,
+                el('small', { text: line })),
+              el('div', { class: 'pq' }, q))));
+          return;
+        }
         grid.append(el('div', { class: 'nbadge', style: `width:${wMm}mm;height:${hMm}mm` + (bc ? `;--br:${bc}` : '') },
           bc ? el('div', { class: 'bstripe' }) : null,
           el('div', { class: 'mast', text: np.masthead || 'The Family Journal' }),

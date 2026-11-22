@@ -369,6 +369,19 @@ body.news .lines .tree-line { stroke: #6d6656; }
 .pposter-key i, .psign .key i { width: 5mm; height: 5mm; border-radius: 50%; background: var(--br); display: inline-block; }
 .psign .key { margin-top: 5mm; font-size: 12pt; }
 .psign .key b { display: block; font-weight: 700; margin-bottom: 2mm; }
+/* press pass (the family's own design): navy bar, red rule, bold sans name, big QR */
+.nbadge.press { padding: 0; background: #f7f5ef; font-family: 'Inter', Arial, sans-serif; color: #0f1e45; }
+.nbadge.press .pbar { background: #0f1e45; color: #fff; text-align: center; font-weight: 800; font-size: calc(30pt * var(--k)); letter-spacing: calc(1.5pt * var(--k));
+  line-height: 1; padding: calc(2.2mm * var(--k)) 0 calc(1.8mm * var(--k)); flex-shrink: 0; }
+.nbadge.press .prule { height: calc(1.3mm * var(--k)); background: #d3202a; flex-shrink: 0; }
+.nbadge.press .pbody { flex: 1; display: flex; align-items: center; gap: calc(2.5mm * var(--k)); padding: calc(2mm * var(--k)) calc(3mm * var(--k)); min-height: 0; }
+.nbadge.press .pname { flex: 1; min-width: 0; display: flex; flex-direction: column; font-weight: 800; font-size: calc(22pt * var(--k)); line-height: 1.05; letter-spacing: -0.3pt; }
+.nbadge.press .pname.f1 { font-size: calc(19pt * var(--k)); } .nbadge.press .pname.f2 { font-size: calc(16pt * var(--k)); } .nbadge.press .pname.f3 { font-size: calc(13pt * var(--k)); }
+.nbadge.press .pname span { overflow-wrap: anywhere; }
+.nbadge.press .pname small { font-weight: 600; font-size: calc(7.5pt * var(--k)); letter-spacing: 0; color: #3a4668; margin-top: calc(1.6mm * var(--k)); line-height: 1.2; }
+.nbadge.press .pq { width: calc(34mm * var(--k)); height: calc(34mm * var(--k)); flex-shrink: 0; background: #fff; padding: 1.2mm; box-sizing: border-box; }
+.nbadge.press .pq .q { width: 100%; height: 100%; }
+.nbadge.press .pq svg { width: 100%; height: 100%; display: block; }
 .nbadge .bstripe { height: calc(1.8mm * var(--k)); background: var(--br); margin: calc(-2.4mm * var(--k)) calc(-3mm * var(--k)) calc(1.2mm * var(--k)); flex-shrink: 0; }
 
 /* ---------- scanner ---------- */
