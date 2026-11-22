@@ -20,8 +20,8 @@
   'use strict';
 
   const DEFAULTS = {
-    cardW: 150, cardH: 68, coupleGap: 16,
-    siblingGap: 22, branchGap: 40, rowGap: 64, treeGap: 90, stackGap: 10, stackIndent: 26, // chart part
+    cardW: 140, cardH: 68, coupleGap: 10,
+    siblingGap: 14, branchGap: 26, rowGap: 64, treeGap: 60, stackGap: 10, stackIndent: 20, // chart part
     indent: 24, vGap: 14,                                                                   // list part
     padX: 110, padY: 36, padR: 40
   };
