@@ -99,7 +99,8 @@
       gen: colIndex(head, [/generation/]),
       p1: colIndex(head, [/parent 1/, /parent/]),
       p2: colIndex(head, [/parent 2/]),
-      spouse: colIndex(head, [/spouse|partner/])
+      spouse: colIndex(head, [/spouse|partner/]),
+      sex: colIndex(head, [/male|female|gender|\bsex\b/])
     };
     const get = (r, i) => (i >= 0 ? tidy(r[i]) : '');
     const out = [];
@@ -107,6 +108,7 @@
       const name = get(r, c.name);
       if (!name) return;
       out.push({
+        sex: parseSex(get(r, c.sex)),
         row: idx + 2,
         id: get(r, c.id).toUpperCase(),
         name,
@@ -176,6 +178,7 @@
         name: split.name,
         memorial: split.memorial || !!rec.memorial,
         badge: titleCase(tidy(rec.badge)) || split.name.split(' ')[0],
+        sexGiven: rec.sex || null, sex: null, sexHow: '',
         role: /spouse|partner/i.test(rec.type || '') ? 'spouse' : (kind === 'family' ? 'blood' : kind === 'friend' ? 'friend' : ''),
         declaredGen: rec.gen || null,
         gen: null,
@@ -424,10 +427,56 @@
       }
     });
 
+    assignSexes(people, input.sexes || {}, warn);
     return { people, rootId, warnings };
   }
 
-  const api = { parseCSV, splitMemorial, norm, lev, familyRecords, friendRecords, buildFamily, tidy };
+  // ---------- male / female ----------
+  // Used only for the words: "son" not "son / daughter". Order of trust: the sheet's Male/Female column, then
+  // config.sexes (by Person ID), then the first name, then the opposite of a known husband or wife.
+  function parseSex(v) {
+    const t = String(v || '').trim().toLowerCase();
+    if (/^(m|male|man|boy|son|he|him|husband)\b/.test(t)) return 'm';
+    if (/^(f|female|woman|girl|daughter|she|her|wife)\b/.test(t)) return 'f';
+    return null;
+  }
+  const MALE_NAMES = ('michoel michael nosson natan chaim yosef yossi shmuel menachem mendy yehuda avrahom avraham avrohom abraham akiva ' +
+    'elimelech eli yermia yirmiyahu yeshaya shaya dov dovid david moshe moish binyomin binyamin benjamin pinchus pinny zev mordechai mordy ' +
+    'shlomo lipa eliezer aron aharon aaron gavriel yaakov yakov jacob eitan yisroel sruli eliyahu yissacher tzvi zvi hirsh heshy aryeh berish ' +
+    'richard simcha baruch ari avi avrumi yitzchak isaac reuven levi naftali gershon boruch dovy dovi yudi shloimie moishie yissi manny').split(' ');
+  const FEMALE_NAMES = ('naomi rivka rivki ruti ruth sara sarah sarala shulamit rochel rachel rochella tamara linda esther esti raizel rosie ' +
+    'meira ahuva chaya chana hencha leah lea faiga faige faigy shaindy dina malka malca mindy aviva devorah devora fraida shoshana aliza adina ' +
+    'draizel dalia miriam mimi ruchama ita shifra shiffi chedva tzipporah tzipora tziporah tammar tammy tamar ayala batsheva hindy brocha michelle ' +
+    'bella baila becca kelly laila riva shoni rikki rina perel bracha gittel zelda yehudis yocheved').split(' ');
+  function sexFromName(name) {
+    const first = norm(String(name || '').split(/\s+/)[0]);
+    if (MALE_NAMES.includes(first)) return 'm';
+    if (FEMALE_NAMES.includes(first)) return 'f';
+    return null;
+  }
+  function assignSexes(people, overrides, warn) {
+    const ov = {};
+    Object.keys(overrides).forEach(k => { const v = parseSex(overrides[k]); if (v) ov[k.toUpperCase()] = v; });
+    people.forEach(p => {
+      if (p.sexGiven) { p.sex = p.sexGiven; p.sexHow = 'sheet'; }
+      else if (ov[p.id]) { p.sex = ov[p.id]; p.sexHow = 'config'; }
+      else { p.sex = sexFromName(p.name) || sexFromName(p.badge); p.sexHow = p.sex ? 'name' : ''; }
+    });
+    // still unknown: the opposite of their husband or wife
+    people.forEach(p => {
+      if (p.sex || !p.spouse || !people.has(p.spouse)) return;
+      const s = people.get(p.spouse).sex;
+      if (s) { p.sex = s === 'm' ? 'f' : 'm'; p.sexHow = 'spouse'; }
+    });
+    people.forEach(p => {
+      if (p.kind === 'friend' || p.kind === 'placeholder') return;
+      if (!p.sex) warn('sex', `We can't tell if ${p.name} is male or female from the name — add M or F in the sheet's "Male / Female" column (until then their relationship words stay neutral, e.g. "grandchild").`, [p.id]);
+      else if (p.spouse && people.has(p.spouse) && people.get(p.spouse).sex === p.sex && p.id < p.spouse)
+        warn('sex', `${p.name} and their spouse ${people.get(p.spouse).name} are both read as ${p.sex === 'm' ? 'male' : 'female'} — check the "Male / Female" column.`, [p.id, p.spouse]);
+    });
+  }
+
+  const api = { parseCSV, splitMemorial, norm, lev, familyRecords, friendRecords, buildFamily, tidy, parseSex, sexFromName };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.FT = Object.assign(root.FT || {}, api);
 })(typeof window !== 'undefined' ? window : globalThis);

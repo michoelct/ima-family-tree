@@ -723,7 +723,7 @@
     if (p.kind === 'friend') where = 'Friend of ' + display(root);
     else if (p.id === fam.rootId) where = 'Where the whole tree begins';
     else if (p.kind === 'placeholder') where = 'Not in the sheet yet';
-    else if (p.otherParent) where = 'Family · parent of ' + p.otherKids.map(k => display(fam.people.get(k))).join(' & ');
+    else if (p.otherParent) where = 'Family · ' + FT.gx('parent', p.sex) + ' of ' + p.otherKids.map(k => display(fam.people.get(k))).join(' & ');
     else if (p.familyGuest) where = 'Family';
     else if (p.stepOf) { const par = fam.people.get(p.stepOf); where = 'Generation ' + p.gen + ' · ' + display(fam.people.get(par.spouse)) + ' & ' + display(par) + '\u2019s family'; }
     else if (root && p.gen) {
@@ -789,7 +789,7 @@
   function shortLine(p) {
     if (p.kind === 'friend') return p.how || 'Friend';
     if (p.kind === 'placeholder') return 'Not in the sheet yet';
-    if (p.otherKids && p.otherKids.length && !p.blood && !p.partner) return 'Parent of ' + p.otherKids.map(id => display(fam.people.get(id))).join(' & ');
+    if (p.otherKids && p.otherKids.length && !p.blood && !p.partner) return (p.sex === 'f' ? 'Mother' : p.sex === 'm' ? 'Father' : 'Parent') + ' of ' + p.otherKids.map(id => display(fam.people.get(id))).join(' & ');
     if (p.familyGuest) return 'Family';
     if (p.parents.length) return 'Child of ' + p.parents.map(id => display(fam.people.get(id))).join(' & ');
     if (p.spouse) return 'Married to ' + display(fam.people.get(p.spouse));
@@ -974,7 +974,7 @@
   /** The line under a badge name: how this person belongs to the birthday girl. */
   function badgeLine(p) {
     if (p.kind === 'friend') return 'Friend of ' + cfg.rootTitle;
-    if (p.otherParent) return p.otherKids.map(k => display(fam.people.get(k))).join(' & ') + '’s parent';
+    if (p.otherParent) return p.otherKids.map(k => display(fam.people.get(k))).join(' & ') + '’s ' + FT.gx('parent', p.sex);
     if (p.stepOf) { const par = fam.people.get(p.stepOf); return display(fam.people.get(par.spouse)) + ' & ' + display(par) + '’s family'; }
     if (p.familyGuest) return cfg.rootTitle + '’s family';
     const r = FT.relate(fam.people, fam.rootId, p.id, fam.rootId);

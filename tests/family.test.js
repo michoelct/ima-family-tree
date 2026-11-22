@@ -44,12 +44,12 @@ test('names link through nicknames, typos and z"l namesakes', () => {
 
 test('relationship sentences', () => {
   const f = fam();
-  assert.strictEqual(say(f, 'FAM-002', 'FAM-010'), 'Ima is your great-grandparent.');
+  assert.strictEqual(say(f, 'FAM-002', 'FAM-010'), 'Ima is your great-grandmother.');
   assert.strictEqual(say(f, 'FAM-002', 'FAM-033'), 'Sim is your second cousin.');
   assert.strictEqual(say(f, 'FAM-001', 'FAM-028'), 'Dovy is your first cousin.');
-  assert.strictEqual(say(f, 'FAM-008', 'FAM-009'), 'Sara is your mother / father-in-law.');
+  assert.strictEqual(say(f, 'FAM-008', 'FAM-009'), 'Sara is your mother-in-law.');
   assert.strictEqual(say(f, 'FAM-028', 'FAM-008'), 'Ruti is married to your first cousin, Michoel.');
-  assert.strictEqual(say(f, 'FAM-001', 'FAM-018'), 'Eli is your aunt / uncle.');
+  assert.strictEqual(say(f, 'FAM-001', 'FAM-018'), 'Eli is your uncle.');
 });
 
 test('blood relationship names', () => {
@@ -88,10 +88,10 @@ test('separated parents and a new partner: nobody is drawn as an ex, children ha
   assert.ok(![...f.people.values()].some(p => /someone/i.test(p.name)), 'a parent with no row is not invented');
   const L = FT.layoutTree(f.people, f.rootId);
   assert.ok(!L.nodes.some(n => n.id === 'FAM-051'));
-  assert.strictEqual(say(f, 'FAM-002', 'FAM-051'), 'Ruth is your parent.');
-  assert.strictEqual(say(f, 'FAM-009', 'FAM-051'), 'Ruth is the parent of your grandchild Toss.');
-  assert.strictEqual(say(f, 'FAM-051', 'FAM-001'), 'Michoel is Toss’s parent too.');
-  assert.strictEqual(say(f, 'FAM-050', 'FAM-002'), 'Toss is your spouse Michoel’s child.');
+  assert.strictEqual(say(f, 'FAM-002', 'FAM-051'), 'Ruth is your mother.');
+  assert.strictEqual(say(f, 'FAM-009', 'FAM-051'), 'Ruth is the mother of your grandson Toss.');
+  assert.strictEqual(say(f, 'FAM-051', 'FAM-001'), 'Michoel is Toss’s father too.');
+  assert.strictEqual(say(f, 'FAM-050', 'FAM-002'), 'Toss is your husband Michoel’s son.');
   assert.ok(f.warnings.some(w => w.kind === 'partner'), 'organiser is told why Ruth is not beside Michoel');
   assert.ok(!f.warnings.map(w => w.text).join(' ').match(/\b(ex|divorc)/i));
 });
@@ -116,11 +116,11 @@ test('a partner\'s children from before are drawn under the partner as part of t
   const L = FT.layoutTree(f.people, f.rootId);
   const n = id => L.nodes.find(x => x.id === id);
   assert.ok(n('FAM-060') && n('FAM-060').x > n('FAM-023').x, 'drawn to the right, under the partner');
-  assert.strictEqual(say(f, 'FAM-021', 'FAM-060'), 'Ari is your spouse Mendy’s child.');
-  assert.strictEqual(say(f, 'FAM-020', 'FAM-060'), 'Ari is part of your sibling Esti’s family.');
-  assert.strictEqual(say(f, 'FAM-060', 'FAM-020'), 'Yossi is Esti’s sibling — you’re part of Esti & Mendy’s family.');
-  assert.strictEqual(say(f, 'FAM-060', 'FAM-023'), 'Yermi is your sibling.');
-  assert.strictEqual(say(f, 'FAM-060', 'FAM-021'), 'Esti is married to your parent, Mendy.');
+  assert.strictEqual(say(f, 'FAM-021', 'FAM-060'), 'Ari is your husband Mendy’s son.');
+  assert.strictEqual(say(f, 'FAM-020', 'FAM-060'), 'Ari is part of your sister Esti’s family.');
+  assert.strictEqual(say(f, 'FAM-060', 'FAM-020'), 'Yossi is Esti’s brother — you’re part of Esti & Mendy’s family.');
+  assert.strictEqual(say(f, 'FAM-060', 'FAM-023'), 'Yermi is your brother.');
+  assert.strictEqual(say(f, 'FAM-060', 'FAM-021'), 'Esti is married to your father, Mendy.');
   assert.ok(!/step/i.test(say(f, 'FAM-020', 'FAM-060') + say(f, 'FAM-021', 'FAM-060')));
 });
 
@@ -222,4 +222,25 @@ test('sun view: everyone linked to the root is placed once, cards do not touch',
   for (let i = 0; i < c.length; i++) for (let j = i + 1; j < c.length; j++)
     assert.ok(Math.hypot(c[i].x - c[j].x, c[i].y - c[j].y) >= L.opts.cardH, c[i].id + ' / ' + c[j].id);
   assert.ok(L.lines.every(l => l.branch), 'every slice has a branch');
+});
+
+test('male / female: from the sheet column, the first name, or the spouse; words follow it', () => {
+  assert.strictEqual(FT.parseSex('M'), 'm'); assert.strictEqual(FT.parseSex('female'), 'f'); assert.strictEqual(FT.parseSex(''), null);
+  assert.strictEqual(FT.sexFromName('Linda Feder'), 'f'); assert.strictEqual(FT.sexFromName('Mendy'), 'm'); assert.strictEqual(FT.sexFromName('Simcha Feder'), 'm'); assert.strictEqual(FT.sexFromName('Zalman Feder'), null);
+  const rows = [H, ['F-1', 'Root Person', 'Ima', 'Family Member', '1', '', '', ''],
+    ['F-2', 'Eli Feder', '', 'Family Member', '2', 'Root Person', '', 'Linda Feder'],
+    ['F-3', 'Linda Feder', '', 'Spouse / Partner', '2', '', '', 'Eli Feder'],
+    ['F-4', 'Simcha Feder', '', 'Family Member', '3', 'Eli Feder', '', 'Rivka Feder'],
+    ['F-5', 'Rivka Feder', '', 'Spouse / Partner', '3', '', '', 'Simcha Feder']];
+  const f = FT.buildFamily({ familyRows: rows, friendRows: [], rootName: 'Root Person' });
+  const p = id => f.people.get(id);
+  assert.strictEqual(p('F-4').sex, 'm', 'Simcha -> male');
+  assert.strictEqual(FT.relate(f.people, 'F-1', 'F-3', 'F-1').word, 'daughter-in-law');
+  assert.strictEqual(FT.relate(f.people, 'F-1', 'F-2', 'F-1').label, 'son');
+  assert.strictEqual(FT.relate(f.people, 'F-1', 'F-4', 'F-1').label, 'grandson');
+  assert.strictEqual(FT.gx('aunt / uncle (by marriage)', 'f'), 'aunt (by marriage)');
+  assert.strictEqual(FT.gx('first cousin once removed', 'f'), 'first cousin once removed');
+  assert.strictEqual(FT.gx('grandchild', null), 'grandchild');
+  const g = FT.buildFamily({ familyRows: rows.map((r, i) => i === 0 ? r.concat('Male / Female') : r.concat(i === 4 ? 'F' : '')), friendRows: [], rootName: 'Root Person' });
+  assert.strictEqual(g.people.get('F-4').sex, 'f', 'the sheet column wins');
 });

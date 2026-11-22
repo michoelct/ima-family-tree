@@ -37,3 +37,10 @@ Badges link to each person's ID (FAM-014). Once badges are printed, don't re-num
 Live at https://michoelct.github.io/ima-family-tree/ (GitHub Pages, from the `main` branch).
 After changing any file in `js/` or `css/`, raise the `?v=` number on the links in `index.html`,
 or phones keep the old copy for up to 10 minutes. Sheet changes need no publishing.
+
+## Male / female
+
+Relationship words say "son", "aunt", "granddaughter's husband" rather than "son / daughter". The app works
+out who is male or female from the first name (Simcha is always a boy here — they are all named after Aba),
+then from a husband or wife. If a new name is unknown, the Organiser's data check lists it: add a column
+called **Male / Female** to the Family_Tree tab and put M or F for that person (that column always wins).

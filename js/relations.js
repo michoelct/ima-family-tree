@@ -1,7 +1,7 @@
 /*
  * relations.js — "how is B related to A?" in plain English, plus the path to light up.
- * Pure: works on the people Map from data.js. No gender is recorded in the sheet,
- * so relationship words are neutral pairs ("aunt / uncle").
+ * Pure: works on the people Map from data.js. Words are male or female (son, aunt) where the person's sex is known,
+ * else neutral pairs ("aunt / uncle").
  */
 (function (root) {
   'use strict';
@@ -94,7 +94,47 @@
    * @returns {{kind, label, phrase, path:[ids], common:[ids], note}}
    *  phrase is written for "B is A's ___" (third person) — the UI adds "your" when A is the viewer.
    */
+  /**
+   * The word at the end of a relationship phrase, as male or female: "grandchild" -> "granddaughter",
+   * "son / daughter-in-law" -> "daughter-in-law". Unknown sex leaves the neutral words.
+   */
+  function gx(text, sex) {
+    if (!text || (sex !== 'm' && sex !== 'f')) return text;
+    const f = sex === 'f';
+    return text
+      .replace(/niece \/ nephew$/, f ? 'niece' : 'nephew')
+      .replace(/aunt \/ uncle( \(by marriage\))?$/, (m, by) => (f ? 'aunt' : 'uncle') + (by || ''))
+      .replace(/son \/ daughter-in-law$/, f ? 'daughter-in-law' : 'son-in-law')
+      .replace(/brother \/ sister-in-law$/, f ? 'sister-in-law' : 'brother-in-law')
+      .replace(/mother \/ father-in-law$/, f ? 'mother-in-law' : 'father-in-law')
+      .replace(/grandchild$/, f ? 'granddaughter' : 'grandson')
+      .replace(/grandparent$/, f ? 'grandmother' : 'grandfather')
+      .replace(/(^|[^a-z])child$/, (m, p) => p + (f ? 'daughter' : 'son'))
+      .replace(/(^|[^a-z])parent$/, (m, p) => p + (f ? 'mother' : 'father'))
+      .replace(/(^|[^a-z])sibling$/, (m, p) => p + (f ? 'sister' : 'brother'))
+      .replace(/(^|[^a-z])spouse$/, (m, p) => p + (f ? 'wife' : 'husband'));
+  }
+  const sexOf = (people, id) => (people.get(id) ? people.get(id).sex : null);
+
+  /** relate(), with every word that describes a person said as male or female where we know it. */
   function relate(people, aId, bId, rootId) {
+    const r = relateRaw(people, aId, bId, rootId);
+    if (!r || r.kind === 'self') return r;
+    const bs = sexOf(people, bId);
+    r.label = gx(r.label, bs);
+    if (r.word) r.word = gx(r.word, bs);
+    // the in-law sentence names the person B married (their side) or B themself (mine)
+    if (r.kind === 'inlaw') {
+      r.relG = gx(r.rel, r.side === 'mine' ? bs : sexOf(people, r.via));
+      // "granddaughter’s husband", "husband’s niece" — every word for its own person
+      if (!r.word && r.side === 'their') r.label = r.relG + '’s ' + gx('spouse', bs);
+      if (!r.word && r.side === 'mine') r.label = gx('spouse', sexOf(people, r.via)) + '’s ' + r.relG;
+      if (!r.word && r.side === 'both') r.label = gx('spouse', sexOf(people, r.via2)) + '’s ' + gx(r.rel, sexOf(people, r.via)) + '’s ' + gx('spouse', bs);
+    }
+    return r;
+  }
+
+  function relateRaw(people, aId, bId, rootId) {
     const A = people.get(aId), B = people.get(bId);
     if (!A || !B) return null;
     if (aId === bId) return { kind: 'self', label: 'you', path: [aId], common: [] };
@@ -200,26 +240,28 @@
     const poss = you ? 'your' : a + '’s';
     const subj = you ? 'you' : a;
     const name = id => display(people.get(id));
+    const w = (word, id) => gx(word, sexOf(people, id)); // 'spouse' -> 'wife', 'child' -> 'son' ...
+    const rr = rel.relG || rel.rel;
     switch (rel.kind) {
       case 'self': return you ? 'This is you.' : b + ' is the same person.';
-      case 'spouse': return b + ' is ' + poss + ' spouse.';
+      case 'spouse': return b + ' is ' + poss + ' ' + rel.label + '.';
       case 'blood': return b + ' is ' + poss + ' ' + rel.label + '.';
       case 'inlaw':
         if (rel.word) return b + ' is ' + poss + ' ' + rel.word + '.';
-        if (rel.side === 'their') return b + ' is married to ' + poss + ' ' + rel.rel + ', ' + name(rel.via) + '.';
-        if (rel.side === 'mine') return b + ' is ' + poss + ' spouse ' + name(rel.via) + '’s ' + rel.rel + '.';
-        return b + ' is married to ' + name(rel.via) + ', ' + poss + ' spouse ' + name(rel.via2) + '’s ' + rel.rel + '.';
+        if (rel.side === 'their') return b + ' is married to ' + poss + ' ' + rr + ', ' + name(rel.via) + '.';
+        if (rel.side === 'mine') return b + ' is ' + poss + ' ' + w('spouse', rel.via) + ' ' + name(rel.via) + '’s ' + rr + '.';
+        return b + ' is married to ' + name(rel.via) + ', ' + poss + ' ' + w('spouse', rel.via2) + ' ' + name(rel.via2) + '’s ' + gx(rel.rel, sexOf(people, rel.via)) + '.';
       case 'viaChild':
         if (rel.side === 'their') {
-          if (rel.rel.kind === 'self') return b + ' is ' + poss + ' parent.';
-          return b + ' is the parent of ' + poss + ' ' + (rel.rel.word || rel.rel.label) + ' ' + name(rel.kid) + '.';
+          if (rel.rel.kind === 'self') return b + ' is ' + poss + ' ' + w('parent', bId) + '.';
+          return b + ' is the ' + w('parent', bId) + ' of ' + poss + ' ' + (rel.rel.word || rel.rel.label) + ' ' + name(rel.kid) + '.';
         }
-        if (rel.rel.kind === 'blood' && rel.rel.up === 1 && rel.rel.down === 0) return b + ' is ' + name(rel.kid) + '\u2019s parent too.';
-        return b + ' is ' + poss + ' child ' + name(rel.kid) + '\u2019s ' + (rel.rel.word || rel.rel.label) + '.';
+        if (rel.rel.kind === 'blood' && rel.rel.up === 1 && rel.rel.down === 0) return b + ' is ' + name(rel.kid) + '\u2019s ' + w('parent', bId) + ' too.';
+        return b + ' is ' + poss + ' ' + w('child', rel.kid) + ' ' + name(rel.kid) + '\u2019s ' + (rel.rel.word || rel.rel.label) + '.';
       case 'stepFamily': {
         const famName = name(rel.fam[0]) + ' & ' + name(rel.fam[1]) + '\u2019s family';
         if (rel.side === 'their') {
-          if (!rel.rel) return b + ' is your spouse ' + name(rel.fam[1]) + '\u2019s child.';
+          if (!rel.rel) return b + ' is your ' + w('spouse', rel.fam[1]) + ' ' + name(rel.fam[1]) + '\u2019s ' + w('child', bId) + '.';
           return b + ' is part of ' + poss + ' ' + (rel.rel.word || rel.rel.label) + ' ' + name(rel.via) + '\u2019s family.';
         }
         return b + ' is ' + name(rel.via) + '\u2019s ' + (rel.rel.word || rel.rel.label) + ' \u2014 ' + (you ? 'you\u2019re' : a + ' is') + ' part of ' + famName + '.';
@@ -252,7 +294,7 @@
     return 90;
   }
 
-  const api = { bloodName, relate, describe, commonLine, closeness, ancestors };
+  const api = { bloodName, relate, describe, gx, commonLine, closeness, ancestors };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.FT = Object.assign(root.FT || {}, api);
 })(typeof window !== 'undefined' ? window : globalThis);
