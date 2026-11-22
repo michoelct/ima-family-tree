@@ -10,6 +10,9 @@
  * split <= the root's generation  -> the whole tree is one indented list (a phone held upright);
  * split  > the deepest generation -> the classic chart. The app picks the split that suits the screen, so the
  * view keeps working however large the family grows.
+ * opts.centerChild = the id of one of the root's children whose family should sit in the middle of the chart:
+ * it is moved to the place among its brothers and sisters that leaves the other families as evenly as possible
+ * on either side (the others keep their order).
  * Any family can be closed (opts.collapsed = Set of the descendant's id): its children are hidden and it gets a
  * "+N" toggle with the number of people inside.
  */
@@ -61,6 +64,7 @@
           .sort((a, b) => P(a).order - P(b).order)
           .forEach(c => { if (!claimed.has(c)) u.stepKids.push(build(c, gen + 1)); });
       }
+      if (gen === rootGen && o.centerChild) centreChild(u, o.centerChild);
       u.hasKids = u.kids.length + u.stepKids.length > 0;
       if (u.hasKids && collapsed.has(u.members[0])) { u.more = countUnits(u.kids) + countUnits(u.stepKids); u.kids = []; u.stepKids = []; }
       u.leaf = !u.kids.length && !u.stepKids.length && !u.more;
@@ -76,6 +80,21 @@
       u.rows = 1 + kids.reduce((s, k) => s + k.rows, 0);
       u.width = Math.max(u.ownW, ...kids.map(k => o.indent + k.width));
       u.height = u.rows * (o.cardH + o.vGap) - o.vGap;
+    }
+
+    // move one child's family to the middle: the place where the other families' widths are most even on each side
+    function centreChild(u, id) {
+      const i = u.kids.findIndex(k => k.members[0] === id);
+      if (i < 0 || u.kids.length < 3) return;
+      const c = u.kids.splice(i, 1)[0];
+      const total = u.kids.reduce((s, k) => s + k.width, 0);
+      let best = 0, bestD = Infinity, left = 0;
+      for (let pos = 0; pos <= u.kids.length; pos++) {
+        const d = Math.abs(left - (total - left));
+        if (d < bestD) { bestD = d; best = pos; }
+        if (pos < u.kids.length) left += u.kids[pos].width;
+      }
+      u.kids.splice(best, 0, c);
     }
 
     // ----- chart part -----

@@ -42,7 +42,7 @@
   let firstRender = true;
   let fromSnapshot = false;          // the first copy came from the bundled snapshot, not an earlier visit
   // how the tree is drawn: 'list' (indented, top to bottom) or 'chart'; null = pick for the screen
-  let viewChoice = store.get('ft.view');
+  let viewChoice = store.get('ft.view2');
   const collapsed = new Set();       // families that are closed (the descendant's id)
   let collapseReady = false;
   const GEN_NAMES = { 1: cfg.rootTitle + ' & elders', 2: 'children', 3: 'grandchildren', 4: 'great-grandchildren', 5: 'great-great-grandchildren' };
@@ -153,10 +153,15 @@
   // chart whose lower generations turn into indented columns at the level that fits the screen best — so the
   // view keeps working as the family grows.
   const rootGen = () => (fam && fam.people.get(fam.rootId) ? fam.people.get(fam.rootId).gen || 1 : 1);
-  function autoMode() {
-    const r = vp.getBoundingClientRect();
-    const w = r.width || window.innerWidth, h = r.height || window.innerHeight;
-    return w < 640 || w / h < 0.85 ? 'list' : 'chart';
+  // Everyone starts on the full chart: one row per generation. The List button is there for anyone who wants it.
+  function autoMode() { return 'chart'; }
+  // the family that sits in the middle of the chart and that the tree opens on (cfg.centerFamily: a badge or full name)
+  function centreFamilyId() {
+    const want = FT.norm(cfg.centerFamily || '');
+    const root = fam && fam.people.get(fam.rootId);
+    if (!want || !root) return null;
+    const hit = root.children.map(c => fam.people.get(c)).find(p => p && (FT.norm(p.badge) === want || FT.norm(p.name) === want));
+    return hit ? hit.id : null;
   }
   function currentMode() { return viewChoice === 'list' || viewChoice === 'chart' ? viewChoice : autoMode(); }
   function bestChartSplit(vw, vh, hide) {
@@ -172,9 +177,9 @@
     return best ? best.s : 99;
   }
   function layoutFor(mode) {
-    if (mode === 'list') return FT.layoutTree(fam.people, fam.rootId, { split: rootGen(), collapsed });
-    const r = vp.getBoundingClientRect();
-    return FT.layoutTree(fam.people, fam.rootId, { split: bestChartSplit(r.width || 1200, r.height || 700, collapsed), collapsed });
+    const centerChild = centreFamilyId();
+    if (mode === 'list') return FT.layoutTree(fam.people, fam.rootId, { split: rootGen(), collapsed, centerChild });
+    return FT.layoutTree(fam.people, fam.rootId, { split: 99, collapsed, centerChild });
   }
   function relayout() { lay = layoutFor(currentMode()); drawTree(); syncViewButtons(); }
   // the list reads like a page: zoom buttons step aside, Fit becomes 'Top'
@@ -218,7 +223,7 @@
     if (before && after) { t.x = sx - (PX() + after.x) * t.k; t.y = sy - (PY() + after.y) * t.k; apply(); }
   }
   function setView(mode) {
-    viewChoice = mode; store.set('ft.view', mode);
+    viewChoice = mode; store.set('ft.view2', mode);
     defaultCollapse(mode);
     lay = layoutFor(mode);
     if (path) ensureVisible(path.rel.path);
@@ -350,10 +355,11 @@
     if (me && nodeOf(me)) { centerOn(me, 0.85); return; }
     if (lay.mode === 'list') { fitAll(); return; }
     const a = visibleArea();
-    if (Math.min((a.w - 40) / stageW(), (a.h - a.top - 30) / stageH()) >= 0.3) { fitAll(); return; }
-    // too big to read whole: start at the top with Ima's card in the middle
-    const n = nodeOf(fam.rootId); if (!n) { fitAll(); return; }
-    t.k = 0.75; t.x = a.w / 2 - (PX() + n.x + lay.opts.cardW / 2) * t.k; t.y = a.top + 12; apply();
+    if (Math.min((a.w - 40) / stageW(), (a.h - a.top - 30) / stageH()) >= 0.45) { fitAll(); return; }
+    // too big to read whole: start at the top, readable, with the middle family (else Ima) in the centre
+    const n = nodeOf(centreFamilyId() || fam.rootId) || nodeOf(fam.rootId); if (!n) { fitAll(); return; }
+    t.k = a.w < 640 ? 0.55 : 0.7;
+    t.x = a.w / 2 - (PX() + n.x + lay.opts.cardW / 2) * t.k; t.y = a.top + 12; apply();
   }
 
   const pts = new Map();
@@ -868,9 +874,8 @@
         grid.append(el('div', { class: 'nbadge', style: `width:${wMm}mm;height:${hMm}mm` },
           el('div', { class: 'mast', text: np.masthead || 'The Family Journal' }),
           el('div', { class: 'dateline' },
-            el('span', { text: np.volume || 'Vol. I' }),
-            el('span', { text: np.edition || 'Special Birthday Edition' }),
-            el('span', { text: np.date || '' })),
+            el('span', { text: np.date || (np.volume || 'Vol. I') }),
+            el('span', { text: np.occasion || np.edition || 'Special Birthday Edition' })),
           el('div', { class: 'nbody' },
             el('div', { class: 'ncol' },
               el('div', { class: 'kicker', text: p.id === fam.rootId ? 'Front page' : 'Meet' }),
@@ -896,7 +901,7 @@
           el('span', { text: np.edition || 'Special Birthday Edition' }),
           el('span', { text: np.date || '' })),
         el('div', { class: 'head', text: 'Extra! Extra! Meet the family' }),
-        el('div', { class: 'sub', text: cfg.subtitle || '' }),
+        el('div', { class: 'sub', text: [np.occasion, cfg.subtitle].filter(Boolean).join(' · ') }),
         el('div', { class: 'cols' },
           el('div', { class: 'step' }, el('b', { text: '1' }), el('span', { text: 'Open your phone camera and point it at the code.' })),
           el('div', { class: 'step' }, el('b', { text: '2' }), el('span', { text: 'Find your name — or scan your own badge.' })),

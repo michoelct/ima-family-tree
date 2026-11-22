@@ -11,6 +11,7 @@ window.FT_CONFIG = {
 
   rootName: 'Shulamit Feder',   // the person the tree grows from
   rootTitle: 'Ima',             // what everyone calls her
+  centerFamily: 'Malca',        // this child's family sits in the middle of the chart, and the tree opens on it
 
   // How often an open page checks the sheet for new rows (seconds)
   refreshSeconds: 45,
@@ -25,7 +26,8 @@ window.FT_CONFIG = {
     masthead: 'The Feder Family Journal',
     volume: 'Vol. I',
     edition: 'Special Birthday Edition',
-    date: '',
+    date: 'Sunday, December 6, 2026',
+    occasion: 'Second day of Chanukah',
     ribbon: 'Happy Birthday, Ima!'
   },
 

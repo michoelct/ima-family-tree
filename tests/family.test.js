@@ -179,3 +179,13 @@ test('a closed family hides its people and says how many', () => {
     noOverlap(L);
   }
 });
+
+test('the chosen family is built in the middle of the chart, the others keep their order', () => {
+  const f = bigFamily();
+  const id = name => [...f.people.values()].find(p => p.name === name).id;
+  const L = FT.layoutTree(f.people, f.rootId, { split: 99, centerChild: id('Child2 Person') });
+  const x = name => L.nodes.find(n => n.id === id(name)).x;
+  assert.ok(x('Child0 Person') < x('Child2 Person') && x('Child2 Person') < x('Child1 Person'), 'Child2 sits between Child0 and Child1');
+  assert.strictEqual(L.nodes.length, FT.layoutTree(f.people, f.rootId, { split: 99 }).nodes.length);
+  noOverlap(L);
+});
