@@ -651,7 +651,20 @@
       return el('div', { class: 'lad-node ' + (cls || '') }, el('b', { text: label + (p.memorial ? ' z\u201dl' : '') }),
         id === path[0] && you ? null : el('small', { text: p.name.split(' ')[0] === label ? '' : p.name.split(' ')[0] }));
     };
-    const leg = (ids, cls) => el('div', { class: 'lad-leg' }, ids.map((id, i) => node(id, i === ids.length - 1 ? cls : '')));
+    // a husband or wife stands beside their partner, not under them like a child
+    const isCouple = (x, y) => x && y && P(x).spouse === y;
+    const leg = (ids, cls) => {
+      const rows = [];
+      for (let i = 0; i < ids.length; i++) {
+        const c = i === ids.length - 1 ? cls : '';
+        if (isCouple(ids[i], ids[i + 1])) {
+          const last = i + 1 === ids.length - 1;
+          rows.push(el('div', { class: 'lad-pair' }, node(ids[i], ''), el('span', { class: 'lad-wed', 'aria-hidden': 'true' }), node(ids[i + 1], last ? cls : '')));
+          i++;
+        } else rows.push(node(ids[i], c));
+      }
+      return el('div', { class: 'lad-leg' }, rows);
+    };
     const box = el('div', { class: 'ladder', 'aria-label': 'How the line runs' });
     box.append(node(path[top], top === 0 ? 'a' : top === path.length - 1 ? 'b' : 'apex'));
     if (left.length || right.length) {
