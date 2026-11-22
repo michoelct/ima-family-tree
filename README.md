@@ -14,7 +14,7 @@ Settings (sheet, root person, refresh time, people not in the sheet yet) are in 
 
 ## Organiser tools
 Open the page with `#organizer` at the end of the address. From there you can:
-- print name badges (A4, 8 per page),
+- print name badges (A4, 8 per page): newspaper style sized to the badge-holder slot (default 90 × 64 mm, adjustable), or plain,
 - print a table sign with one big QR code,
 - print the whole tree as a poster (A4 to A1),
 - read a list of problems in the sheet (typos, missing people, wrong generation).

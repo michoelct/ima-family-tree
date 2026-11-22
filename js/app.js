@@ -762,6 +762,19 @@
     const urlIn = el('input', { type: 'url', value: url, 'aria-label': 'App address' });
     urlIn.onchange = () => { store.set('ft.appUrl', urlIn.value.trim()); renderOrganizer(); };
     const paper = el('select', { 'aria-label': 'Poster paper size' }, ['A3', 'A2', 'A1', 'A4'].map(s => el('option', { value: s, text: s + ' landscape' })));
+    const style = el('select', { 'aria-label': 'Badge style' },
+      el('option', { value: 'news', text: 'Newspaper style — to slide into badge holders' }),
+      el('option', { value: 'plain', text: 'Plain — cut out or stick on' }));
+    style.value = store.get('ft.badgeStyle') || 'news';
+    const num = (v, d) => { const n = parseFloat(v); return n >= 40 && n <= 150 ? n : d; };
+    const bw = el('input', { type: 'number', min: 40, max: 150, step: 1, value: store.get('ft.badgeW') || 90, 'aria-label': 'Badge width in mm' });
+    const bh = el('input', { type: 'number', min: 40, max: 150, step: 1, value: store.get('ft.badgeH') || 64, 'aria-label': 'Badge height in mm' });
+    const sizeRow = el('div', { class: 'row size-row' }, el('span', { text: 'Card size' }), bw, el('span', { text: '×' }), bh, el('span', { text: 'mm (width × height)' }));
+    const showSize = () => { sizeRow.hidden = style.value === 'plain'; };
+    style.onchange = () => { store.set('ft.badgeStyle', style.value); showSize(); };
+    bw.onchange = () => store.set('ft.badgeW', String(num(bw.value, 90)));
+    bh.onchange = () => store.set('ft.badgeH', String(num(bh.value, 64)));
+    showSize();
     const people = badgePeople();
     const w = fam.warnings;
     box.append(
@@ -774,8 +787,10 @@
       el('div', { class: 'card-box' },
         el('h3', { text: 'Print' }),
         el('p', { class: 'muted', text: 'Badges link to each person’s ID (FAM-014). After printing, don’t re-number or sort the sheet — new people can be added at the bottom any time.' }),
+        el('label', { text: 'Badge style' }), style, sizeRow,
+        el('p', { class: 'muted', text: 'Measure the clear slot inside one holder (below the zip strip) and set the card 2–3 mm smaller each way. Print one page and slide a card in before printing them all.' }),
         el('div', { class: 'row' },
-          el('button', { class: 'btn primary', onclick: printBadges }, '🏷️ Name badges (' + people.length + ')'),
+          el('button', { class: 'btn primary', onclick: () => printBadges(style.value, num(bw.value, 90), num(bh.value, 64)) }, '🏷️ Name badges (' + people.length + ')'),
           el('button', { class: 'btn', onclick: printSign }, '🪧 Table sign (one big QR)')),
         el('label', { text: 'Tree poster paper' }), paper,
         el('button', { class: 'btn', onclick: () => printPoster(paper.value) }, '🌳 Print the whole tree as a poster')),
@@ -801,21 +816,51 @@
     window.addEventListener('afterprint', done);
     setTimeout(() => window.print(), 150);
   }
-  function printBadges() {
+  /** The line under a badge name: how this person belongs to the birthday girl. */
+  function badgeLine(p) {
+    if (p.kind === 'friend') return 'Friend of ' + cfg.rootTitle;
+    if (p.otherParent) return p.otherKids.map(k => display(fam.people.get(k))).join(' & ') + '’s parent';
+    if (p.stepOf) { const par = fam.people.get(p.stepOf); return display(fam.people.get(par.spouse)) + ' & ' + display(par) + '’s family'; }
+    if (p.familyGuest) return cfg.rootTitle + '’s family';
+    const r = FT.relate(fam.people, fam.rootId, p.id, fam.rootId);
+    return p.id === fam.rootId ? 'The birthday girl!' : r && r.kind !== 'none' ? cfg.rootTitle + '’s ' + (r.word || r.label) : 'Generation ' + p.gen;
+  }
+  /** Name badges. 'news' = newspaper cards cut to the badge-holder slot (wMm x hMm); 'plain' = the original sheet. */
+  function printBadges(style, wMm, hMm) {
     const base = appUrl();
-    doPrint('p-badges', 'A4 portrait', root => {
-      const grid = el('div', { class: 'badges' });
+    const news = style !== 'plain';
+    const np = cfg.newspaper || {};
+    doPrint(news ? 'p-badges p-news' : 'p-badges', 'A4 portrait', root => {
+      const grid = el('div', { class: news ? 'nbadges' : 'badges' });
+      if (news) {
+        grid.style.gridTemplateColumns = `repeat(${Math.max(1, Math.floor(194 / wMm))}, ${wMm}mm)`;
+        grid.style.setProperty('--k', String(Math.min(wMm / 94, hMm / 68)));
+      }
       badgePeople().forEach(p => {
         const q = el('div', { class: 'q' }); q.append(qrSvg(base + '?p=' + encodeURIComponent(p.id), 4));
-        let line;
-        if (p.kind === 'friend') line = 'Friend of ' + cfg.rootTitle;
-        else if (p.otherParent) line = p.otherKids.map(k => display(fam.people.get(k))).join(' & ') + '’s parent';
-        else if (p.stepOf) { const par = fam.people.get(p.stepOf); line = display(fam.people.get(par.spouse)) + ' & ' + display(par) + '’s family'; }
-        else if (p.familyGuest) line = cfg.rootTitle + '’s family';
-        else { const r = FT.relate(fam.people, fam.rootId, p.id, fam.rootId); line = p.id === fam.rootId ? 'The birthday girl!' : r && r.kind !== 'none' ? cfg.rootTitle + '’s ' + (r.word || r.label) : 'Generation ' + p.gen; }
-        grid.append(el('div', { class: 'pbadge' }, q, el('div', { class: 'who' },
-          el('div', { class: 'bn', text: display(p) }), el('div', { class: 'fn', text: p.name }), el('div', { class: 'gl', text: line }),
-          el('div', { class: 'scan', text: 'Scan me to see how we’re related' }))));
+        const line = badgeLine(p);
+        if (!news) {
+          grid.append(el('div', { class: 'pbadge' }, q, el('div', { class: 'who' },
+            el('div', { class: 'bn', text: display(p) }), el('div', { class: 'fn', text: p.name }), el('div', { class: 'gl', text: line }),
+            el('div', { class: 'scan', text: 'Scan me to see how we’re related' }))));
+          return;
+        }
+        const nm = display(p);
+        const size = nm.length > 16 ? 's3' : nm.length > 11 ? 's2' : nm.length > 7 ? 's1' : '';
+        grid.append(el('div', { class: 'nbadge', style: `width:${wMm}mm;height:${hMm}mm` },
+          el('div', { class: 'mast', text: np.masthead || 'The Family Journal' }),
+          el('div', { class: 'dateline' },
+            el('span', { text: np.volume || 'Vol. I' }),
+            el('span', { text: np.edition || 'Special Birthday Edition' }),
+            el('span', { text: np.date || '' })),
+          el('div', { class: 'nbody' },
+            el('div', { class: 'ncol' },
+              el('div', { class: 'kicker', text: p.id === fam.rootId ? 'Front page' : 'Meet' }),
+              el('div', { class: 'head ' + size, text: nm }),
+              nm !== p.name ? el('div', { class: 'full', text: p.name }) : null,
+              el('div', { class: 'rel', text: line })),
+            el('div', { class: 'qcol' }, q, el('div', { class: 'cap', text: 'Scan me — see how we’re related' }))),
+          el('div', { class: 'ribbon', text: np.ribbon || ('Happy Birthday, ' + cfg.rootTitle + '!') })));
       });
       root.append(grid);
     });

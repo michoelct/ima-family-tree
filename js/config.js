@@ -19,6 +19,16 @@ window.FT_CONFIG = {
   // Leave empty to use the address the page is opened from.
   appUrl: 'https://michoelct.github.io/ima-family-tree/',
 
+  // The newspaper-style name badges (they match the newspaper birthday cake).
+  // Leave date empty to leave it off the badge.
+  newspaper: {
+    masthead: 'The Feder Family Journal',
+    volume: 'Vol. I',
+    edition: 'Special Birthday Edition',
+    date: '',
+    ribbon: 'Happy Birthday, Ima!'
+  },
+
   // People who are not in the sheet (yet). A row in the sheet with the same
   // name replaces the entry here automatically.
   extras: [
