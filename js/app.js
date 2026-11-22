@@ -351,7 +351,9 @@
     const c = document.querySelector(`.card[data-id="${CSS.escape(id)}"]`);
     if (c) { c.classList.remove('flash'); void c.offsetWidth; c.classList.add('flash'); }
   }
-  function initialView() {
+  let startT = null; // the view initialView set, so closing the welcome card can redo it if nobody has moved
+  function initialView() { initialViewNow(); startT = Object.assign({}, t); }
+  function initialViewNow() {
     if (me && nodeOf(me)) { centerOn(me, 0.85); return; }
     if (lay.mode === 'list') { fitAll(); return; }
     const a = visibleArea();
@@ -417,7 +419,9 @@
   $('zoomOut').onclick = () => zoomBy(1 / 1.25);
   $('zoomFit').onclick = () => (path ? fitPath() : fitAll());
   $('zoomMe').onclick = () => { if (me) centerOn(me, 0.9); };
-  $('helloX').onclick = () => { $('hello').hidden = true; document.querySelector('.scan-fab').hidden = false; apply(); try { sessionStorage.setItem('ft.helloShut', '1'); } catch (e) { /* ignore */ } };
+  $('helloX').onclick = () => { $('hello').hidden = true; document.querySelector('.scan-fab').hidden = false;
+    // the welcome card is gone: if the view is still where it opened, open it again without the card's space
+    if (startT && startT.x === t.x && startT.y === t.y && startT.k === t.k) initialView(); else apply(); try { sessionStorage.setItem('ft.helloShut', '1'); } catch (e) { /* ignore */ } };
   $('helloFind').onclick = () => go('me');
   const tipSeen = () => { if (!$('treeHint').hidden) { $('treeHint').hidden = true; store.set('ft.tipSeen', true); } };
   $('hintX').onclick = tipSeen;
