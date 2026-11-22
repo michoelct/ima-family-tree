@@ -190,9 +190,12 @@ input:focus-visible, select:focus-visible, button:focus-visible { outline: 3px s
 .lad-leg .lad-node { position: relative; }
 .lad-leg .lad-node::before { content: ''; position: absolute; top: -12px; left: 50%; height: 12px; border-left: 2px solid var(--gold-300); }
 .lad-pair { display: flex; align-items: center; justify-content: center; max-width: 100%; position: relative; }
-.lad-pair::before { content: ''; position: absolute; top: -12px; left: 50%; height: 12px; border-left: 2px solid var(--gold-300); } /* the line comes down to the couple */
+/* the line from above comes down the middle, bends across, and drops onto the family member (the first card) */
+.lad-pair::before { content: ''; position: absolute; top: -12px; left: 50%; height: 6px; border-left: 2px solid var(--gold-300); }
+.lad-pair::after { content: ''; position: absolute; top: -6px; left: var(--l, 50%); width: var(--w, 0px); border-top: 2px solid var(--gold-300); }
 .lad-pair .lad-node { min-width: 0; flex: 0 1 auto; padding: 5px 8px; }
-.lad-pair .lad-node::before { display: none; }
+.lad-pair .lad-node::before { top: -6px; height: 6px; }
+.lad-pair .lad-node + .lad-wed + .lad-node::before { display: none; }
 .lad-wed { flex: 0 0 10px; height: 2px; background: var(--gold-300); }
 .chain { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; margin-top: 12px; font-size: 13px; }
 .chain .chip { background: rgba(255,255,255,.15); border-radius: 8px; padding: 3px 8px; }

@@ -665,6 +665,14 @@
       }
       return el('div', { class: 'lad-leg' }, rows);
     };
+    // the line into a couple bends to the family member's card (Esti), not to the middle of the pair
+    const bend = () => box.querySelectorAll('.lad-pair').forEach(pair => {
+      const pr = pair.getBoundingClientRect(), fb = pair.firstElementChild.getBoundingClientRect();
+      if (!pr.width) return;
+      const c = pr.width / 2, b = fb.left - pr.left + fb.width / 2;
+      pair.style.setProperty('--l', Math.min(c, b) + 'px');
+      pair.style.setProperty('--w', Math.abs(c - b) + 'px');
+    });
     const box = el('div', { class: 'ladder', 'aria-label': 'How the line runs' });
     box.append(node(path[top], top === 0 ? 'a' : top === path.length - 1 ? 'b' : 'apex'));
     if (left.length || right.length) {
@@ -672,6 +680,10 @@
       if (left.length) legs.append(leg(left, 'a'));
       if (right.length) legs.append(leg(right, 'b'));
       box.append(legs);
+    }
+    if (box.querySelector('.lad-pair')) {
+      requestAnimationFrame(bend); setTimeout(bend, 60);
+      if (window.ResizeObserver) new ResizeObserver(bend).observe(box);
     }
     return box;
   }
