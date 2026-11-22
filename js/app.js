@@ -115,7 +115,7 @@
 
   // ---------- render all ----------
   function render() {
-    fam = FT.buildFamily({ familyRows: data.familyRows, friendRows: data.friendRows, extras: cfg.extras, rootName: cfg.rootName });
+    fam = FT.buildFamily({ familyRows: data.familyRows, friendRows: data.friendRows, extras: cfg.extras, rootName: cfg.rootName, corrections: cfg.corrections, sexes: cfg.sexes });
     restoreMe();
     branchOf = FT.branchMap(fam.people, fam.rootId);
     branchColour = new Map();

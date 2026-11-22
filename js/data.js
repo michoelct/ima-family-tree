@@ -157,6 +157,16 @@
     const warnings = [];
     const people = new Map();
     const familyRecs = familyRecords(input.familyRows);
+    // corrections from the config, by Person ID (for a row we can't edit in the sheet ourselves)
+    const fixes = input.corrections || {};
+    familyRecs.forEach(r => {
+      const f = fixes[r.id];
+      if (!f) return;
+      ['name', 'badge', 'parent1', 'parent2', 'spouse'].forEach(k => { if (f[k] != null) r[k] = f[k]; });
+    });
+    // a name typed in small letters gets its capitals: "Mindy kohn" -> "Mindy Kohn" (in names and the parent / spouse columns)
+    const caps = v => (v ? String(v).replace(/(^|[\s-])(\p{Ll})/gu, (m, a, ch) => a + ch.toUpperCase()) : v);
+    familyRecs.forEach(r => { ['name', 'parent1', 'parent2', 'spouse'].forEach(k => { r[k] = caps(r[k]); }); });
     const friendRecs = friendRecords(input.friendRows);
 
     const spelling = new Map();
@@ -447,7 +457,7 @@
   const FEMALE_NAMES = ('naomi rivka rivki ruti ruth sara sarah sarala shulamit rochel rachel rochella tamara linda esther esti raizel rosie ' +
     'meira ahuva chaya chana hencha leah lea faiga faige faigy shaindy dina malka malca mindy aviva devorah devora fraida shoshana aliza adina ' +
     'draizel dalia miriam mimi ruchama ita shifra shiffi chedva tzipporah tzipora tziporah tammar tammy tamar ayala batsheva hindy brocha michelle ' +
-    'bella baila becca kelly laila riva shoni rikki rina perel bracha gittel zelda yehudis yocheved').split(' ');
+    'bella baila becca kelly laila riva shoni rikki rina perel bracha nechama yael yaelle chani gitty leah gittel zelda yehudis yocheved').split(' ');
   function sexFromName(name) {
     const first = norm(String(name || '').split(/\s+/)[0]);
     if (MALE_NAMES.includes(first)) return 'm';

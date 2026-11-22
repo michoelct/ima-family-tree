@@ -244,3 +244,14 @@ test('male / female: from the sheet column, the first name, or the spouse; words
   const g = FT.buildFamily({ familyRows: rows.map((r, i) => i === 0 ? r.concat('Male / Female') : r.concat(i === 4 ? 'F' : '')), friendRows: [], rootName: 'Root Person' });
   assert.strictEqual(g.people.get('F-4').sex, 'f', 'the sheet column wins');
 });
+
+test('names typed in small letters get capitals; a config correction fixes a row we cannot edit', () => {
+  const rows = [H, ['F-1', 'Root Person', 'Ima', 'Family Member', '1', '', '', ''],
+    ['F-2', 'Ann Root', '', 'Family Member', '2', 'Root Person', '', ''],
+    ['F-3', 'Bea Root', '', 'Family Member', '2', 'Root Person', '', ''],
+    ['F-4', 'mindy kohn', '', 'Family Member', '3', 'Ann Root', '', '']];
+  const f = FT.buildFamily({ familyRows: rows, friendRows: [], rootName: 'Root Person', corrections: { 'F-4': { parent1: 'Bea Root' } } });
+  const m = f.people.get('F-4');
+  assert.strictEqual(m.name, 'Mindy Kohn');
+  assert.deepStrictEqual(m.parents, ['F-3']);
+});

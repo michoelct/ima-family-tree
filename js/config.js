@@ -31,6 +31,13 @@ window.FT_CONFIG = {
     ribbon: 'Happy Birthday, Ima!'
   },
 
+  // Corrections to sheet rows, by Person ID — used where the sheet says something we know is wrong.
+  // Once the sheet itself is fixed these change nothing and can be deleted.
+  corrections: {
+    // Faige Jeidel is Devorah Friedman's daughter (married to Yaakov), not Malca & Heshy's
+    'FAM-098': { parent1: 'Zev Aryeh Friedman', parent2: 'Devorah Friedman' }
+  },
+
   // People who are not in the sheet (yet). A row in the sheet with the same
   // name replaces the entry here automatically.
   extras: [
