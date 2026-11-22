@@ -123,3 +123,59 @@ test('a partner\'s children from before are drawn under the partner as part of t
   assert.strictEqual(say(f, 'FAM-060', 'FAM-021'), 'Esti is married to your parent, Mendy.');
   assert.ok(!/step/i.test(say(f, 'FAM-020', 'FAM-060') + say(f, 'FAM-021', 'FAM-060')));
 });
+
+// a bigger family built by hand: 3 children, 9 grandchildren, 18 great-grandchildren, married couples throughout
+function bigFamily() {
+  const r = [H, ['F-1', 'Root Person', 'Ima', 'Family Member', '1', '', '', '']];
+  let n = 2;
+  const add = (name, gen, parent, spouse) => r.push(['F-' + n++, name, '', 'Family Member', String(gen), parent, '', spouse || '']);
+  for (let a = 0; a < 3; a++) {
+    const A = 'Child' + a + ' Person'; add(A, 2, 'Root Person', 'Partner' + a + ' Other');
+    r.push(['F-' + n++, 'Partner' + a + ' Other', '', 'Spouse / Partner', '2', '', '', A]);
+    for (let b = 0; b < 3; b++) {
+      const B = 'Grand' + a + b + ' Person'; add(B, 3, A, b === 0 ? 'Gspouse' + a + ' Other' : '');
+      if (b === 0) r.push(['F-' + n++, 'Gspouse' + a + ' Other', '', 'Spouse / Partner', '3', '', '', B]);
+      for (let c = 0; c < 2; c++) add('Great' + a + b + c + ' Person', 4, B);
+    }
+  }
+  return FT.buildFamily({ familyRows: r, friendRows: [], rootName: 'Root Person' });
+}
+const noOverlap = (L) => {
+  const o = L.opts;
+  for (let i = 0; i < L.nodes.length; i++) for (let j = i + 1; j < L.nodes.length; j++) {
+    const a = L.nodes[i], b = L.nodes[j];
+    assert.ok(!(Math.abs(a.x - b.x) < o.cardW && Math.abs(a.y - b.y) < o.cardH), `${a.id} and ${b.id} overlap`);
+  }
+};
+
+test('every shape (list, mixed, chart) places everyone once without overlaps', () => {
+  const f = bigFamily();
+  const onTree = [...f.people.values()].filter(p => p.onTree !== false).length;
+  for (const split of [1, 2, 3, 4, 99]) {
+    const L = FT.layoutTree(f.people, f.rootId, { split });
+    assert.strictEqual(L.nodes.length, onTree, 'split ' + split);
+    assert.strictEqual(new Set(L.nodes.map(x => x.id)).size, onTree);
+    noOverlap(L);
+  }
+  const list = FT.layoutTree(f.people, f.rootId, { split: 1 });
+  assert.strictEqual(list.mode, 'list');
+  assert.ok(list.width < 500, 'the list fits a phone: ' + list.width);
+  // in the list every child is one notch to the right of its parent and below it
+  list.nodes.filter(x => x.stacked).forEach(x => {
+    const parent = list.nodes.find(m => m.id === f.people.get(x.id).parents[0]);
+    assert.ok(x.x > parent.x && x.y > parent.y, x.id + ' sits under its parent');
+  });
+});
+
+test('a closed family hides its people and says how many', () => {
+  const f = bigFamily();
+  const child0 = [...f.people.values()].find(p => p.name === 'Child0 Person').id;
+  for (const split of [1, 3, 99]) {
+    const all = FT.layoutTree(f.people, f.rootId, { split });
+    const L = FT.layoutTree(f.people, f.rootId, { split, collapsed: new Set([child0]) });
+    const tog = L.toggles.find(g => g.id === child0);
+    assert.strictEqual(tog.more, all.nodes.length - L.nodes.length, 'the +N counts the hidden people (split ' + split + ')');
+    assert.strictEqual(tog.more, 3 + 1 + 6, 'three grandchildren, one partner, six great-grandchildren');
+    noOverlap(L);
+  }
+});

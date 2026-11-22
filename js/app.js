@@ -4,7 +4,6 @@
   const FT = window.FT;
   const cfg = window.FT_CONFIG;
   const $ = id => document.getElementById(id);
-  const PADX = 120, PADY = 40;
 
   // ---------- small helpers ----------
   function el(tag, attrs, ...kids) {
@@ -41,6 +40,11 @@
   let path = null;         // { a, b, rel }
   let t = { x: 0, y: 0, k: 1 };
   let firstRender = true;
+  let fromSnapshot = false;          // the first copy came from the bundled snapshot, not an earlier visit
+  // how the tree is drawn: 'list' (indented, top to bottom) or 'chart'; null = pick for the screen
+  let viewChoice = store.get('ft.view');
+  const collapsed = new Set();       // families that are closed (the descendant's id)
+  let collapseReady = false;
   const GEN_NAMES = { 1: cfg.rootTitle + ' & elders', 2: 'children', 3: 'grandchildren', 4: 'great-grandchildren', 5: 'great-great-grandchildren' };
 
   // ---------- data ----------
@@ -58,12 +62,13 @@
       store.set('ft.data', data);
       if (changed) {
         render();
-        if (before) {
+        if (before && !fromSnapshot) {
           const added = [...fam.people.values()].filter(p => p.source === 'sheet' && !before.has(FT.norm(p.name))).map(display);
           if (added.length) toast((added.length === 1 ? 'Just added: ' : 'Just added: ') + added.slice(0, 4).join(', ') + (added.length > 4 ? ' and ' + (added.length - 4) + ' more' : ''));
           else if (manual) toast('Updated from the sheet.');
         }
       } else if (manual) toast('Already up to date.');
+      fromSnapshot = false;
       setSub();
       if ($('view-organizer').classList.contains('on')) renderOrganizer();
     } catch (e) {
@@ -75,7 +80,7 @@
   async function loadFirst() {
     data = store.get('ft.data');
     if (!data) {
-      try { const r = await fetch('data/snapshot.json', { cache: 'no-cache' }); if (r.ok) data = await r.json(); } catch (e) { /* offline */ }
+      try { const r = await fetch('data/snapshot.json', { cache: 'no-cache' }); if (r.ok) { data = await r.json(); fromSnapshot = true; } } catch (e) { /* offline */ }
     }
     if (data) render();
     await fetchLive(false);
@@ -97,8 +102,8 @@
   function render() {
     fam = FT.buildFamily({ familyRows: data.familyRows, friendRows: data.friendRows, extras: cfg.extras, rootName: cfg.rootName });
     restoreMe();
-    lay = FT.layoutTree(fam.people, fam.rootId);
-    drawTree();
+    if (!collapseReady) { collapseReady = true; defaultCollapse(currentMode()); }
+    relayout();
     if (path && (!fam.people.has(path.a) || !fam.people.has(path.b))) clearPath();
     else if (path) setPath(path.a, path.b, false);
     renderPeople();
@@ -143,7 +148,109 @@
     $('treeHint').hidden = !me || !!store.get('ft.tipSeen');
   }
 
+  // ---------- layout choice ----------
+  // An upright phone gets the indented list (read top to bottom, names near full size). A wider screen gets a
+  // chart whose lower generations turn into indented columns at the level that fits the screen best — so the
+  // view keeps working as the family grows.
+  const rootGen = () => (fam && fam.people.get(fam.rootId) ? fam.people.get(fam.rootId).gen || 1 : 1);
+  function autoMode() {
+    const r = vp.getBoundingClientRect();
+    const w = r.width || window.innerWidth, h = r.height || window.innerHeight;
+    return w < 640 || w / h < 0.85 ? 'list' : 'chart';
+  }
+  function currentMode() { return viewChoice === 'list' || viewChoice === 'chart' ? viewChoice : autoMode(); }
+  function bestChartSplit(vw, vh, hide) {
+    const g0 = rootGen();
+    const maxGen = Math.max(g0, ...[...fam.people.values()].map(p => p.gen || 0));
+    let best = null;
+    for (let s = g0 + 1; s <= maxGen + 1; s++) {
+      const L = FT.layoutTree(fam.people, fam.rootId, { split: s, collapsed: hide });
+      const W = L.width + L.opts.padX + L.opts.padR, H = L.height + 2 * L.opts.padY;
+      const k = Math.min((vw - 40) / W, (vh - 30) / H);
+      if (!best || k > best.k * 1.02) best = { s, k };
+    }
+    return best ? best.s : 99;
+  }
+  function layoutFor(mode) {
+    if (mode === 'list') return FT.layoutTree(fam.people, fam.rootId, { split: rootGen(), collapsed });
+    const r = vp.getBoundingClientRect();
+    return FT.layoutTree(fam.people, fam.rootId, { split: bestChartSplit(r.width || 1200, r.height || 700, collapsed), collapsed });
+  }
+  function relayout() { lay = layoutFor(currentMode()); drawTree(); syncViewButtons(); }
+  // the list reads like a page: zoom buttons step aside, Fit becomes 'Top'
+  function syncZoomButtons() {
+    const list = lay && lay.mode === 'list';
+    $('zoomIn').hidden = list; $('zoomOut').hidden = list;
+    $('zoomFit').textContent = list ? 'Top' : 'Fit';
+  }
+
+  // families start closed from the grandchildren down in the list (your own line stays open); the chart shows all
+  function defaultCollapse(mode) {
+    collapsed.clear();
+    if (mode !== 'list') return;
+    const keep = new Set();
+    const up = id => { const p = fam.people.get(id); if (!p || keep.has(id)) return; keep.add(id); p.parents.forEach(up); if (p.spouse && !keep.has(p.spouse)) { keep.add(p.spouse); fam.people.get(p.spouse).parents.forEach(up); } };
+    if (me) up(me);
+    const g0 = rootGen();
+    fam.people.forEach(p => { if (p.blood && (p.gen || 0) >= g0 + 2 && p.children.length && !keep.has(p.id)) collapsed.add(p.id); });
+  }
+  // open every closed family above the given people, so they are on the tree
+  function ensureVisible(ids) {
+    let changed = false;
+    for (let round = 0; round < 8; round++) {
+      const missing = ids.filter(id => fam.people.has(id) && fam.people.get(id).onTree !== false && !nodeOf(id));
+      if (!missing.length) break;
+      const seen = new Set();
+      const walk = id => { if (seen.has(id)) return; seen.add(id); if (collapsed.delete(id)) changed = true; const p = fam.people.get(id); if (!p) return; p.parents.forEach(walk); if (p.spouse) walk(p.spouse); };
+      missing.forEach(walk);
+      if (!changed) break;
+      lay = layoutFor(currentMode());
+    }
+    if (changed) drawTree();
+    return changed;
+  }
+  function toggleFamily(id) {
+    const before = nodeOf(id);
+    const sx = before ? t.x + (PX() + before.x) * t.k : 0, sy = before ? t.y + (PY() + before.y) * t.k : 0;
+    if (collapsed.has(id)) collapsed.delete(id); else collapsed.add(id);
+    relayout();
+    const after = nodeOf(id);
+    if (before && after) { t.x = sx - (PX() + after.x) * t.k; t.y = sy - (PY() + after.y) * t.k; apply(); }
+  }
+  function setView(mode) {
+    viewChoice = mode; store.set('ft.view', mode);
+    defaultCollapse(mode);
+    lay = layoutFor(mode);
+    if (path) ensureVisible(path.rel.path);
+    drawTree(); syncViewButtons();
+    if (path) fitPath(); else if (me && nodeOf(me)) centerOn(me); else fitAll();
+  }
+  function syncViewButtons() {
+    syncZoomButtons();
+    const m = lay ? lay.mode : currentMode();
+    $('viewList').classList.toggle('on', m === 'list'); $('viewList').setAttribute('aria-pressed', m === 'list');
+    $('viewChart').classList.toggle('on', m === 'chart'); $('viewChart').setAttribute('aria-pressed', m === 'chart');
+    const anyClosed = lay && lay.toggles.some(g => g.more);
+    $('openAll').hidden = !anyClosed;
+    $('closeAll').hidden = anyClosed || !lay || !lay.toggles.length;
+  }
+  $('viewList').onclick = () => setView('list');
+  $('viewChart').onclick = () => setView('chart');
+  $('openAll').onclick = () => { collapsed.clear(); relayout(); if (lay.mode === 'chart') fitAll(); };
+  $('closeAll').onclick = () => { defaultCollapse('list'); if (!collapsed.size) fam.people.forEach(p => { if (p.blood && p.children.length && p.id !== fam.rootId) collapsed.add(p.id); }); relayout(); fitAll(); };
+  let resizeTimer;
+  window.addEventListener('resize', () => {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(() => {
+      if (!fam || !lay) return;
+      const next = layoutFor(currentMode());
+      if (next.mode !== lay.mode || next.split !== lay.split) { lay = next; drawTree(); syncViewButtons(); if (path) fitPath(); else fitAll(); }
+      else if (path) fitPath();
+    }, 220);
+  });
+
   // ---------- tree ----------
+  const PX = () => (lay ? lay.opts.padX : 110), PY = () => (lay ? lay.opts.padY : 36);
   function cardClass(p) {
     return 'card' + (p.id === fam.rootId ? ' root' : '') + (p.memorial ? ' memorial' : '') + (p.kind === 'placeholder' ? ' placeholder' : '') + (p.id === me ? ' me' : '');
   }
@@ -152,8 +259,10 @@
     const o = lay.opts;
     const cards = $('cards'), lines = $('lines');
     cards.textContent = ''; lines.textContent = '';
-    const W = lay.width + PADX + 60, H = lay.height + PADY + 60;
+    const PADX = PX(), PADY = PY();
+    const W = stageW(), H = stageH();
     $('stage').style.width = W + 'px'; $('stage').style.height = H + 'px';
+    $('stage').classList.toggle('as-list', lay.mode === 'list');
     lines.setAttribute('width', W); lines.setAttribute('height', H);
     const g = svg('g', { transform: `translate(${PADX},${PADY})`, id: 'treeLines' });
     lay.lines.forEach(l => g.append(svg('path', { d: l.d, class: 'tree-line' })));
@@ -162,7 +271,7 @@
     lines.append(svg('g', { transform: `translate(${PADX},${PADY})`, id: 'hotLines' }));
 
     lay.rows.forEach(r => cards.append(el('div', { class: 'row-label', style: `left:12px;top:${PADY + r.y + o.cardH / 2 - 8}px`, text: 'Gen ' + r.gen + (GEN_NAMES[r.gen] ? ' · ' + GEN_NAMES[r.gen] : '') })));
-    lay.unlinked.forEach((u, i) => { if (i === 0) cards.append(el('div', { class: 'unlinked-label', style: `left:${PADX + u.x}px;top:${PADY + (u.gen - 1) * (o.cardH + o.rowGap) - 26}px`, text: 'Not linked to ' + cfg.rootTitle + ' yet' })); });
+    lay.unlinked.forEach((u, i) => { if (i === 0) cards.append(el('div', { class: 'unlinked-label', style: `left:${PADX + u.x}px;top:${PADY + u.y}px`, text: 'Not linked to ' + cfg.rootTitle + ' yet' })); });
 
     lay.nodes.forEach(n => {
       const p = fam.people.get(n.id);
@@ -172,44 +281,79 @@
         el('div', { class: 'full', text: p.kind === 'placeholder' ? p.name + ' · not in the sheet yet' : p.name }));
       cards.append(b);
     });
+    // open / close a family: "+12" when closed, "−" when open
+    lay.toggles.forEach(tg => {
+      const p = fam.people.get(tg.id);
+      const label = tg.more ? `Show ${tg.more} more in ${display(p)}’s family` : `Close ${display(p)}’s family`;
+      cards.append(el('button', { class: 'tog' + (tg.more ? ' closed' : ''), style: `left:${PADX + tg.x}px;top:${PADY + tg.y}px`, 'aria-label': label, title: label,
+        onclick: e => { e.stopPropagation(); toggleFamily(tg.id); } }, tg.more ? '+' + tg.more : '−'));
+    });
     applyHighlight();
     apply();
   }
+  const stageW = () => lay.width + PX() + lay.opts.padR;
+  const stageH = () => lay.height + 2 * PY();
 
   function nodeOf(id) { return lay.nodes.find(n => n.id === id); }
 
   // ---------- pan & zoom ----------
   const vp = $('viewport'), stage = $('stage');
-  function apply() { stage.style.transform = `translate(${t.x}px,${t.y}px) scale(${t.k})`; }
+  function apply() {
+    // the list scrolls like a page: keep it from drifting off the screen
+    if (lay && lay.mode === 'list') {
+      const a = visibleArea(), W = stageW() * t.k, H = stageH() * t.k;
+      t.x = W <= a.w ? Math.min(Math.max(t.x, 0), a.w - W) : Math.min(Math.max(t.x, a.w - W - 8), 8);
+      t.y = H <= a.h - 90 ? Math.min(Math.max(t.y, -8), a.h - H) : Math.min(Math.max(t.y, a.h - H - 90), 8 + a.top);
+    }
+    stage.style.transform = `translate(${t.x}px,${t.y}px) scale(${t.k})`;
+  }
+  // the part of the viewport not covered by the person panel or the welcome card
+  function visibleArea() {
+    const r = vp.getBoundingClientRect();
+    const open = !$('sheet').hidden;
+    const side = open && window.innerWidth >= 760 ? $('sheet').offsetWidth : 0;
+    const below = open && window.innerWidth < 760 ? Math.max(0, r.bottom - $('sheet').getBoundingClientRect().top) : 0;
+    const top = !$('hello').hidden ? Math.max(0, $('hello').getBoundingClientRect().bottom - r.top + 8) : 0;
+    return { w: r.width - side, h: Math.max(140, r.height - below), top };
+  }
+  const listK = () => Math.min(1, Math.max(0.5, (visibleArea().w - 12) / stageW()));
   function clampK(k) { return Math.min(2.2, Math.max(0.08, k)); }
   function zoomAt(px, py, k) { k = clampK(k); t.x = px - (px - t.x) * (k / t.k); t.y = py - (py - t.y) * (k / t.k); t.k = k; apply(); }
   function zoomBy(f) { const r = vp.getBoundingClientRect(); zoomAt(r.width / 2, r.height / 2, t.k * f); }
   function fitBox(x0, y0, x1, y1, maxK) {
-    const r = vp.getBoundingClientRect();
-    const open = !$('sheet').hidden;
-    const side = open && window.innerWidth >= 760 ? $('sheet').offsetWidth : 0; // desktop panel covers the right
-    const below = open && window.innerWidth < 760 ? Math.max(0, r.bottom - $('sheet').getBoundingClientRect().top) : 0; // phone panel covers the bottom
-    const w = r.width - side, h = Math.max(140, r.height - below);
-    const k = clampK(Math.min((w - 40) / (x1 - x0), (h - 30) / (y1 - y0), maxK || 1));
-    t.k = k; t.x = (w - (x1 - x0) * k) / 2 - x0 * k; t.y = (h - (y1 - y0) * k) / 2 - y0 * k; apply();
+    const a = visibleArea();
+    const h = a.h - a.top;
+    let k;
+    // the list never shrinks below reading size: if the box is too tall, show its top part
+    if (lay.mode === 'list') k = Math.min(listK(), maxK || 1);
+    else k = clampK(Math.min((a.w - 40) / (x1 - x0), (h - 30) / (y1 - y0), maxK || 1));
+    t.k = k;
+    t.x = (a.w - (x1 - x0) * k) / 2 - x0 * k;
+    t.y = (y1 - y0) * k <= h - 30 ? a.top + (h - (y1 - y0) * k) / 2 - y0 * k : a.top + 16 - y0 * k;
+    apply();
   }
-  function fitAll() { fitBox(0, 0, lay.width + PADX + 60, lay.height + PADY + 60, 1); }
+  function fitAll() {
+    if (lay.mode === 'list') { t.k = listK(); t.x = 0; t.y = visibleArea().top + 8; apply(); return; }
+    fitBox(0, 0, stageW(), stageH(), 1);
+  }
   function centerOn(id, k) {
+    ensureVisible([id]);
     const n = nodeOf(id); if (!n) return;
-    const r = vp.getBoundingClientRect(); const o = lay.opts;
-    t.k = clampK(k || Math.max(t.k, 0.85));
-    t.x = r.width / 2 - (PADX + n.x + o.cardW / 2) * t.k;
-    t.y = r.height / 2 - (PADY + n.y + o.cardH / 2) * t.k; apply();
+    const a = visibleArea(); const o = lay.opts;
+    t.k = lay.mode === 'list' ? listK() : clampK(k || Math.max(t.k, 0.85));
+    t.x = a.w / 2 - (PX() + n.x + o.cardW / 2) * t.k;
+    t.y = a.top + (a.h - a.top) / 2 - (PY() + n.y + o.cardH / 2) * t.k; apply();
     const c = document.querySelector(`.card[data-id="${CSS.escape(id)}"]`);
     if (c) { c.classList.remove('flash'); void c.offsetWidth; c.classList.add('flash'); }
   }
   function initialView() {
     if (me && nodeOf(me)) { centerOn(me, 0.85); return; }
-    const r = vp.getBoundingClientRect();
-    const W = lay.width + PADX + 60, H = lay.height + PADY + 60;
-    if (Math.min((r.width - 40) / W, (r.height - 40) / H) >= 0.45) { fitAll(); return; }
+    if (lay.mode === 'list') { fitAll(); return; }
+    const a = visibleArea();
+    if (Math.min((a.w - 40) / stageW(), (a.h - a.top - 30) / stageH()) >= 0.3) { fitAll(); return; }
+    // too big to read whole: start at the top with Ima's card in the middle
     const n = nodeOf(fam.rootId); if (!n) { fitAll(); return; }
-    t.k = 0.8; t.x = r.width / 2 - (PADX + n.x + lay.opts.cardW / 2) * t.k; t.y = $('hello').hidden ? 16 : 200; apply();
+    t.k = 0.75; t.x = a.w / 2 - (PX() + n.x + lay.opts.cardW / 2) * t.k; t.y = a.top + 12; apply();
   }
 
   const pts = new Map();
@@ -252,7 +396,7 @@
     e.preventDefault();
     const r = vp.getBoundingClientRect();
     const mouseWheel = e.deltaMode !== 0 || (e.deltaX === 0 && Math.abs(e.deltaY) >= 50 && Number.isInteger(e.deltaY));
-    if (e.ctrlKey || mouseWheel) zoomAt(e.clientX - r.left, e.clientY - r.top, t.k * Math.exp(-e.deltaY * (e.ctrlKey ? 0.01 : 0.0015)));
+    if (e.ctrlKey || (mouseWheel && lay.mode !== 'list')) zoomAt(e.clientX - r.left, e.clientY - r.top, t.k * Math.exp(-e.deltaY * (e.ctrlKey ? 0.01 : 0.0015)));
     else { t.x -= e.deltaX; t.y -= e.deltaY; apply(); }
   }, { passive: false });
   vp.addEventListener('keydown', e => {
@@ -267,11 +411,10 @@
   $('zoomOut').onclick = () => zoomBy(1 / 1.25);
   $('zoomFit').onclick = () => (path ? fitPath() : fitAll());
   $('zoomMe').onclick = () => { if (me) centerOn(me, 0.9); };
-  $('helloX').onclick = () => { $('hello').hidden = true; document.querySelector('.scan-fab').hidden = false; try { sessionStorage.setItem('ft.helloShut', '1'); } catch (e) { /* ignore */ } };
+  $('helloX').onclick = () => { $('hello').hidden = true; document.querySelector('.scan-fab').hidden = false; apply(); try { sessionStorage.setItem('ft.helloShut', '1'); } catch (e) { /* ignore */ } };
   $('helloFind').onclick = () => go('me');
   const tipSeen = () => { if (!$('treeHint').hidden) { $('treeHint').hidden = true; store.set('ft.tipSeen', true); } };
   $('hintX').onclick = tipSeen;
-  window.addEventListener('resize', () => { if (path) fitPath(); });
 
   // ---------- highlighted line ----------
   function setPath(a, b, fit) {
@@ -282,6 +425,7 @@
     $('pathTitle').textContent = FT.describe(fam.people, rel, a, b, you, fam.rootId);
     $('pathSub').textContent = rel.path.map(id => display(fam.people.get(id))).join(' → ');
     $('pathBar').hidden = false;
+    ensureVisible(rel.path);
     applyHighlight();
     if (fit !== false) fitPath();
   }
@@ -293,8 +437,17 @@
     const o = lay.opts;
     const ns = path.rel.path.map(nodeOf).filter(Boolean);
     if (!ns.length) return;
-    const x0 = Math.min(...ns.map(n => n.x)) + PADX, y0 = Math.min(...ns.map(n => n.y)) + PADY;
-    const x1 = Math.max(...ns.map(n => n.x)) + PADX + o.cardW, y1 = Math.max(...ns.map(n => n.y)) + PADY + o.cardH;
+    if (lay.mode === 'list') {
+      // the list keeps reading size; if the whole line does not fit, show the other person in the middle
+      const a = visibleArea(), k = listK();
+      const top = Math.min(...ns.map(n => n.y)), bot = Math.max(...ns.map(n => n.y)) + o.cardH;
+      if ((bot - top + 40) * k > a.h - a.top) {
+        const b = nodeOf(path.b) || ns[ns.length - 1];
+        t.k = k; t.x = 0; t.y = a.top + (a.h - a.top) / 2 - (PY() + b.y + o.cardH / 2) * k; apply(); return;
+      }
+    }
+    const x0 = Math.min(...ns.map(n => n.x)) + PX(), y0 = Math.min(...ns.map(n => n.y)) + PY();
+    const x1 = Math.max(...ns.map(n => n.x)) + PX() + o.cardW, y1 = Math.max(...ns.map(n => n.y)) + PY() + o.cardH;
     fitBox(x0 - 30, y0 - 30, x1 + 30, y1 + 30, 1);
   }
 
@@ -679,19 +832,28 @@
   function printPoster(size) {
     const mm = { A4: [297, 210], A3: [420, 297], A2: [594, 420], A1: [841, 594] }[size] || [420, 297];
     const pxPerMm = 96 / 25.4;
-    const pw = (mm[0] - 16) * pxPerMm, ph = (mm[1] - 16) * pxPerMm - 60;
-    doPrint('p-poster', size + ' landscape', root => {
-      const keepPath = path; path = null; applyHighlight();
-      const W = lay.width + PADX + 60, H = lay.height + PADY + 60;
+    // the poster always shows everyone; pick the paper direction and chart shape that print the cards largest
+    let best = null;
+    [['landscape', mm[0], mm[1]], ['portrait', mm[1], mm[0]]].forEach(([dir, w, h]) => {
+      const pw = (w - 16) * pxPerMm, ph = (h - 16) * pxPerMm - 60;
+      const split = bestChartSplit(pw + 40, ph + 30, new Set());
+      const L = FT.layoutTree(fam.people, fam.rootId, { split });
+      const W = L.width + L.opts.padX + L.opts.padR, H = L.height + 2 * L.opts.padY;
       const k = Math.min(pw / W, ph / H);
+      if (!best || k > best.k) best = { dir, L, W, H, k };
+    });
+    doPrint('p-poster', size + ' ' + best.dir, root => {
+      const keepPath = path, keepLay = lay, keepT = Object.assign({}, t);
+      path = null; lay = best.L; drawTree();
       const clone = $('stage').cloneNode(true);
       clone.removeAttribute('id');
-      clone.style.transform = `scale(${k})`;
+      clone.style.transform = `scale(${best.k})`;
       clone.style.position = 'absolute';
       clone.querySelectorAll('.me').forEach(c => c.classList.remove('me'));
-      const wrap = el('div', { class: 'pposter-wrap', style: `width:${W * k}px;height:${H * k}px;margin:0 auto` }, clone);
+      clone.querySelectorAll('.tog').forEach(c => c.remove());
+      const wrap = el('div', { class: 'pposter-wrap', style: `width:${best.W * best.k}px;height:${best.H * best.k}px;margin:0 auto` }, clone);
       root.append(el('h1', { class: 'pposter-title', text: cfg.title }), wrap);
-      path = keepPath; applyHighlight();
+      lay = keepLay; path = keepPath; drawTree(); t = keepT; apply();
     });
   }
 

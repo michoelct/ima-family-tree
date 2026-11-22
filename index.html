@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/app.css?v=10">
+  <link rel="stylesheet" href="css/app.css?v=11">
 </head>
 <body>
   <header class="top">
@@ -34,6 +34,14 @@
       <div class="tree-bar">
         <input id="treeFind" type="search" placeholder="Find someone in the tree" autocomplete="off" aria-label="Find someone in the tree">
         <div id="treeFindList" class="find-list" hidden></div>
+        <div class="tree-tools">
+          <div class="seg" role="group" aria-label="How to show the tree">
+            <button id="viewList" aria-pressed="false" title="Read the family top to bottom">☰ List</button>
+            <button id="viewChart" aria-pressed="false" title="The family as a chart">⊤ Chart</button>
+          </div>
+          <button id="openAll" class="tool" hidden>Open all families</button>
+          <button id="closeAll" class="tool" hidden>Close families</button>
+        </div>
       </div>
       <div id="pathBar" class="path-bar" hidden>
         <div class="path-text"><strong id="pathTitle"></strong><span id="pathSub"></span></div>
@@ -47,6 +55,15 @@
         </div>
       </div>
           <button class="scan-fab" data-scan aria-label="Scan a badge"><span aria-hidden="true">📷</span> Scan a badge</button>
+          <div id="hello" class="hello-card" hidden>
+            <button class="hello-x" id="helloX" aria-label="Close">✕</button>
+            <p class="hello-title">👋 Welcome! Who are you?</p>
+            <p class="hello-text">Scan your own badge or find your name — then the tree shows how you're related to everyone here.</p>
+            <div class="hello-row">
+              <button class="btn primary" data-scan>📷 Scan badge</button>
+              <button class="btn" id="helloFind">Find my name</button>
+            </div>
+          </div>
           <div class="zoom">
           <button id="zoomOut" aria-label="Zoom out">−</button>
           <button id="zoomFit">Fit</button>
@@ -54,16 +71,7 @@
           <button id="zoomMe" hidden aria-label="Show me on the tree">You</button>
         </div>
       </div>
-      <div id="hello" class="hello-card" hidden>
-        <button class="hello-x" id="helloX" aria-label="Close">✕</button>
-        <p class="hello-title">👋 Welcome! Who are you?</p>
-        <p class="hello-text">Scan your own badge or find your name — then the tree shows how you're related to everyone here.</p>
-        <div class="hello-row">
-          <button class="btn primary" data-scan>📷 Scan badge</button>
-          <button class="btn" id="helloFind">Find my name</button>
-        </div>
-      </div>
-      <p class="hint" id="treeHint" hidden>Tap anyone to see how you're related · drag to move · pinch to zoom <button class="hint-x" id="hintX" aria-label="Hide tip">✕</button></p>
+      <p class="hint" id="treeHint" hidden>Tap anyone to see how you're related · tap + to open a family <button class="hint-x" id="hintX" aria-label="Hide tip">✕</button></p>
     </section>
 
     <!-- EVERYONE -->
@@ -128,11 +136,11 @@
   <div id="toast" class="toast" hidden></div>
   <div id="printRoot" class="print-root"></div>
 
-  <script src="js/config.js?v=10"></script>
-  <script src="js/vendor/qrcode.min.js?v=10"></script>
-  <script src="js/data.js?v=10"></script>
-  <script src="js/relations.js?v=10"></script>
-  <script src="js/layout.js?v=10"></script>
-  <script src="js/app.js?v=10"></script>
+  <script src="js/config.js?v=11"></script>
+  <script src="js/vendor/qrcode.min.js?v=11"></script>
+  <script src="js/data.js?v=11"></script>
+  <script src="js/relations.js?v=11"></script>
+  <script src="js/layout.js?v=11"></script>
+  <script src="js/app.js?v=11"></script>
 </body>
 </html>

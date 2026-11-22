@@ -1,5 +1,5 @@
 {
- "fetchedAt": "2026-11-19T23:21:58.548Z",
+ "fetchedAt": "2026-11-22T05:48:56.385Z",
  "familyRows": [
   [
    "Person ID",
@@ -83,7 +83,7 @@
   ],
   [
    "FAM-008",
-   "Ruti Chaiomovitz ",
+   "Ruti Chaimovitz ",
    "Ruti ",
    "Spouse / Partner",
    "3 - Grandchildren",
@@ -367,8 +367,8 @@
    "Chaya",
    "Family Member (Child / Descendant)",
    "4 - Great-Grandchildren",
-   "ET Exler",
-   "",
+   "Esther Tova Exler",
+   "Yechiel Exler",
    ""
   ],
   [
@@ -377,8 +377,8 @@
    "Riva",
    "Family Member (Child / Descendant)",
    "4 - Great-Grandchildren",
-   "ET Exler",
-   "",
+   "Esther Tova Exler",
+   "Yechiel Exler",
    ""
   ],
   [
@@ -479,6 +479,716 @@
    "4 - Great-Grandchildren",
    "Malka Chaimovitz",
    "Dovid Aharon Chaimovitz",
+   ""
+  ],
+  [
+   "FAM-048",
+   "Moshe Feder",
+   "Moish",
+   "Family Member (Child / Descendant)",
+   "2 - Children",
+   "Shulamit Feder",
+   "Simcha Feder (z\"l)",
+   ""
+  ],
+  [
+   "FAM-049",
+   "Moshe Aryeh Kohn ",
+   "Aryeh",
+   "Family Member (Child / Descendant)",
+   "4 - Great-Grandchildren",
+   "Mindy Kohn",
+   "Yisroel Yaakov Kohn ",
+   "Chana Tova Kohn "
+  ],
+  [
+   "FAM-050",
+   "Chana Tova Kohn",
+   "Chana",
+   "Spouse / Partner",
+   "4 - Great-Grandchildren",
+   "",
+   "",
+   "Moshe Aryeh Kohn"
+  ],
+  [
+   "FAM-051",
+   "Binyomin Zev Kohn",
+   "Binyomin",
+   "Family Member (Child / Descendant)",
+   "5 - Great-Great-Grandchildren",
+   "Chana Tova Kohn",
+   "Moshe Aryeh Kohn",
+   ""
+  ],
+  [
+   "FAM-052",
+   "Rivka Rosa Edell",
+   "Rikki",
+   "Family Member (Child / Descendant)",
+   "4 - Great-Grandchildren",
+   "Mindy Kohn",
+   "Sruli Kohn",
+   "Dovid Edell"
+  ],
+  [
+   "FAM-053",
+   "Dovid Eliezer Edell",
+   "Dovid",
+   "Spouse / Partner",
+   "4 - Great-Grandchildren",
+   "",
+   "",
+   "Rikki Edell"
+  ],
+  [
+   "FAM-054",
+   "Menachem Edell",
+   "Menachem",
+   "Family Member (Child / Descendant)",
+   "5 - Great-Great-Grandchildren",
+   "Rikki Edell",
+   "Dovid Edell",
+   ""
+  ],
+  [
+   "FAM-055",
+   "Mindy kohn ",
+   "Mindy ",
+   "Family Member (Child / Descendant)",
+   "3 - Grandchildren",
+   "Chana Malca Fass ",
+   "Menachem Tzvi Fass ",
+   "Yisroel Yaakov Kohn"
+  ],
+  [
+   "FAM-056",
+   "Yisroel Yaakov Kohn ",
+   "Sruli ",
+   "Spouse / Partner",
+   "3 - Grandchildren",
+   "",
+   "",
+   "Mindy kohn "
+  ],
+  [
+   "FAM-057",
+   "Faiga Shaindel Kohn ",
+   "Shaindy ",
+   "Family Member (Child / Descendant)",
+   "4 - Great-Grandchildren",
+   "Mindy kohn ",
+   "Yisroel Yaakov Kohn ",
+   ""
+  ],
+  [
+   "FAM-058",
+   "Pinchus Kohn ",
+   "Pinny ",
+   "Family Member (Child / Descendant)",
+   "4 - Great-Grandchildren",
+   "Mindy Kohn ",
+   "Yisroel Yaakov Kohn ",
+   ""
+  ],
+  [
+   "FAM-059",
+   "Avrohom Kohn ",
+   "Avrumi ",
+   "Family Member (Child / Descendant)",
+   "4 - Great-Grandchildren",
+   "Mindy Kohn ",
+   "Yisroel Yaakov ",
+   "Rachel Kohn "
+  ],
+  [
+   "FAM-060",
+   "Rachel Kohn ",
+   "Rachel ",
+   "Spouse / Partner",
+   "4 - Great-Grandchildren",
+   "",
+   "",
+   "Avrohom Kohn "
+  ],
+  [
+   "FAM-061",
+   "Menachem Kohn ",
+   "Menachem ",
+   "Family Member (Child / Descendant)",
+   "5 - Great-Great-Grandchildren",
+   "Rachel Kohn ",
+   "Avrohom Kohn ",
+   ""
+  ],
+  [
+   "FAM-062",
+   "Michoel Fass",
+   "Michoel",
+   "Family Member (Child / Descendant)",
+   "3 - Grandchildren",
+   "Chana Malca Fass ",
+   "Menachem Tzvi Fass",
+   "Aviva Sara Fass"
+  ],
+  [
+   "FAM-063",
+   "Aviva Sara Fass",
+   "Aviva",
+   "Spouse / Partner",
+   "3 - Grandchildren",
+   "Michelle Penchansky",
+   "Richard Albert  Penchansky",
+   "Michoel Fass"
+  ],
+  [
+   "FAM-064",
+   "Chaya Leba Fass",
+   "Leba",
+   "Family Member (Child / Descendant)",
+   "4 - Great-Grandchildren",
+   "Tamara Malka Fass",
+   "Michoel Fass",
+   ""
+  ],
+  [
+   "FAM-065",
+   "Binyamin Meir Fass",
+   "Binyamin",
+   "Family Member (Child / Descendant)",
+   "4 - Great-Grandchildren",
+   "Tamara Malka Fass",
+   "Michoel Fass",
+   ""
+  ],
+  [
+   "FAM-066",
+   "Avraham Fass",
+   "Avraham",
+   "Family Member (Child / Descendant)",
+   "4 - Great-Grandchildren",
+   "Tamara Malka Fass",
+   "Michoel Fass",
+   ""
+  ],
+  [
+   "FAM-067",
+   "Zev Wolf Fass",
+   "Zevi",
+   "Family Member (Child / Descendant)",
+   "4 - Great-Grandchildren",
+   "Aviva Sara Fass",
+   "Michoel Fass",
+   ""
+  ],
+  [
+   "FAM-068",
+   "Simcha Fass",
+   "Simcha ",
+   "Family Member (Child / Descendant)",
+   "4 - Great-Grandchildren",
+   "Aviva Sara Fass",
+   "Michoel Fass",
+   ""
+  ],
+  [
+   "FAM-069",
+   "Mordechai Levovitz",
+   "Mordy",
+   "Spouse / Partner",
+   "4 - Great-Grandchildren",
+   "",
+   "",
+   "Sarah Levovitz"
+  ],
+  [
+   "FAM-070",
+   "Sarah Levovitz",
+   "Sarala",
+   "Family Member (Child / Descendant)",
+   "4 - Great-Grandchildren",
+   "Shlomo Bistrizky",
+   "Esther Rochel Bistritzky",
+   "Mordechai levovitz"
+  ],
+  [
+   "FAM-071",
+   "Rivka Levovitz",
+   "Becca",
+   "Family Member (Child / Descendant)",
+   "5 - Great-Great-Grandchildren",
+   "Mordechai levovitz",
+   "Sarah Bistritzky",
+   ""
+  ],
+  [
+   "FAM-072",
+   "Chana Malca Fass",
+   "Malca",
+   "Family Member (Child / Descendant)",
+   "2 - Children",
+   "Simcha Feder Z\"L",
+   "Shulamit Feder",
+   "Menachem Tzvi Fass"
+  ],
+  [
+   "FAM-073",
+   "Menachem Tzvi Fass",
+   "Heshy",
+   "Spouse / Partner",
+   "2 - Children",
+   "",
+   "",
+   "Chana Malca Fass"
+  ],
+  [
+   "FAM-074",
+   "Esther Rochel Bistritzky",
+   "Esther Rochel",
+   "Family Member (Child / Descendant)",
+   "3 - Grandchildren",
+   "Menachem Tzvi Fass",
+   "Chana Malca Fass",
+   "Shlomo Bistritzky"
+  ],
+  [
+   "FAM-075",
+   "Shlomo Bistritzky",
+   "Shloimie",
+   "Spouse / Partner",
+   "3 - Grandchildren",
+   "",
+   "",
+   "Esther Rochel Bistritzky"
+  ],
+  [
+   "FAM-076",
+   "Faiga Shaindel Zlotowitz",
+   "Shaindy ",
+   "Family Member (Child / Descendant)",
+   "4 - Great-Grandchildren",
+   "Shlomo Bistritzky",
+   "Esther Rochel Bistritzky",
+   "Shmuel Zev Zlotowitz"
+  ],
+  [
+   "FAM-077",
+   "Shmuel Zev Zlotowitz",
+   "Shmuli",
+   "Spouse / Partner",
+   "4 - Great-Grandchildren",
+   "",
+   "",
+   "Faiga Shaindel Zlotowitz"
+  ],
+  [
+   "FAM-078",
+   "Ruchama Chaya Fruma Zlotowitz  Chaya ",
+   "",
+   "Family Member (Child / Descendant)",
+   "5 - Great-Great-Grandchildren",
+   "Shmuel Zev Zlotowitz",
+   "Faiga Shaindel Zlotowitz",
+   ""
+  ],
+  [
+   "FAM-079",
+   "Lipa Eliezer Zlotowitz",
+   "Eliezer",
+   "Family Member (Child / Descendant)",
+   "5 - Great-Great-Grandchildren",
+   "Shmuel Zev Zlotowitz",
+   "Faiga Shaindel Zlotowitz",
+   ""
+  ],
+  [
+   "FAM-080",
+   "Ita Zlotowitz",
+   "Ita",
+   "Family Member (Child / Descendant)",
+   "5 - Great-Great-Grandchildren",
+   "Shmuel Zev Zlotowitz",
+   "Faiga Shaindel Zlotowitz",
+   ""
+  ],
+  [
+   "FAM-081",
+   "Shifra Rabinovitz",
+   "Shiffi",
+   "Family Member (Child / Descendant)",
+   "4 - Great-Grandchildren",
+   "Shlomo Bistritzky",
+   "Esther Rochel Bistritzky",
+   "Avrahom Shlomo Rabinovitz"
+  ],
+  [
+   "FAM-082",
+   "Avrahom Shlomo Rabinovitz",
+   "Avi",
+   "Spouse / Partner",
+   "4 - Great-Grandchildren",
+   "",
+   "",
+   "Shifra Rabinovitz"
+  ],
+  [
+   "FAM-083",
+   "Moshe Nachman Rabinovitz",
+   "Moshe",
+   "Family Member (Child / Descendant)",
+   "5 - Great-Great-Grandchildren",
+   "Avrahom Shlomo Raninovitz",
+   "Shifra Rabinovitz",
+   ""
+  ],
+  [
+   "FAM-084",
+   "Fraida Aliza Rabinovitz",
+   "Aliza",
+   "Family Member (Child / Descendant)",
+   "5 - Great-Great-Grandchildren",
+   "Avrahom Shlomo Raninovitz",
+   "Shifra Rabinovitz",
+   ""
+  ],
+  [
+   "FAM-085",
+   "Simcha Rabinovitz",
+   "Simcha",
+   "Family Member (Child / Descendant)",
+   "5 - Great-Great-Grandchildren",
+   "Avrahom Shlomo Raninovitz",
+   "Shifra Rabinovitz",
+   ""
+  ],
+  [
+   "FAM-086",
+   "Hencha  Leah Newman",
+   "Laila",
+   "Family Member (Child / Descendant)",
+   "4 - Great-Grandchildren",
+   "Shlomo Bistritzky",
+   "Esther Rochel Bistritzky",
+   "Binyamin Yaakov Newman"
+  ],
+  [
+   "FAM-087",
+   "Binyamin Yaakov Newman",
+   "Binyamin",
+   "Spouse / Partner",
+   "4 - Great-Grandchildren",
+   "",
+   "",
+   "Hencha Leah Newman"
+  ],
+  [
+   "FAM-088",
+   "Aron Baruch Newman",
+   "Ari",
+   "Family Member (Child / Descendant)",
+   "5 - Great-Great-Grandchildren",
+   "Binyamin Yaakov Newman",
+   "Hencha Leah Newman",
+   ""
+  ],
+  [
+   "FAM-089",
+   "Shoshana Baila Newman",
+   "Bella ",
+   "Family Member (Child / Descendant)",
+   "5 - Great-Great-Grandchildren",
+   "Binyamin Yaakov Newman",
+   "Hencha Leah Newman",
+   ""
+  ],
+  [
+   "FAM-090",
+   "Aliza Singer",
+   "Aliza",
+   "Family Member (Child / Descendant)",
+   "4 - Great-Grandchildren",
+   "Shlomo Bistritzky",
+   "Esther Rochel Bistritzky",
+   "Gavriel Dov Singer"
+  ],
+  [
+   "FAM-091",
+   "Gavriel Dov Singer",
+   "Gavriel",
+   "Spouse / Partner",
+   "4 - Great-Grandchildren",
+   "",
+   "",
+   "Aliza Singer"
+  ],
+  [
+   "FAM-092",
+   "Dovid Shalom Singer",
+   "Dovid",
+   "Family Member (Child / Descendant)",
+   "5 - Great-Great-Grandchildren",
+   "Gavriel Singer",
+   "Aliza Singer",
+   ""
+  ],
+  [
+   "FAM-093",
+   "Adina Kopel",
+   "Adina",
+   "Family Member (Child / Descendant)",
+   "4 - Great-Grandchildren",
+   "Shlomo Bistritzky",
+   "Esther Rochel  Bistritzky",
+   "Moshe Kopel"
+  ],
+  [
+   "FAM-094",
+   "Moshe Kopel",
+   "Moishie",
+   "Spouse / Partner",
+   "4 - Great-Grandchildren",
+   "",
+   "",
+   "Adina Kopel"
+  ],
+  [
+   "FAM-095",
+   "Avrahom Bistritzky",
+   "Avi",
+   "Family Member (Child / Descendant)",
+   "4 - Great-Grandchildren",
+   "Shlomo Bistritzky",
+   "Esther Rochel Bistritzky",
+   ""
+  ],
+  [
+   "FAM-096",
+   "Draizel Blima Bistritzky",
+   "Rosie",
+   "Family Member (Child / Descendant)",
+   "4 - Great-Grandchildren",
+   "Shlomo Bistritzky",
+   "Esther Rochel Bistritzky",
+   ""
+  ],
+  [
+   "FAM-097",
+   "Devorah Friedman",
+   "Devora",
+   "Family Member (Child / Descendant)",
+   "3 - Grandchildren",
+   "Menachem Tzvi Fass",
+   "Chana Malca Fass",
+   ""
+  ],
+  [
+   "FAM-098",
+   "Faiga Shaindel Jeidel",
+   "Faige",
+   "Family Member (Child / Descendant)",
+   "4 - Great-Grandchildren",
+   "Menachem Tzvi Fass",
+   "Chana Malca Fass",
+   "Yaakov Jeidel"
+  ],
+  [
+   "FAM-099",
+   "Yaakov Jeidel",
+   "Yaakov",
+   "Spouse / Partner",
+   "4 - Great-Grandchildren",
+   "",
+   "",
+   "Faiga Shaindel Jeidel"
+  ],
+  [
+   "FAM-100",
+   "Leah Jeidel",
+   "Lea",
+   "Family Member (Child / Descendant)",
+   "5 - Great-Great-Grandchildren",
+   "Yaakov Jeidel",
+   "Faiga Shaindel Jeidel",
+   ""
+  ],
+  [
+   "FAM-101",
+   "Dalia Jeidel",
+   "Dalia ",
+   "Family Member (Child / Descendant)",
+   "5 - Great-Great-Grandchildren",
+   "Yaakov Jeidel",
+   "Faiga Shaindel Jeidel",
+   ""
+  ],
+  [
+   "FAM-102",
+   "Eitan Jeidel",
+   "Eitan",
+   "Family Member (Child / Descendant)",
+   "5 - Great-Great-Grandchildren",
+   "Yaakov Jeidel",
+   "Faiga Shaindel Jeidel",
+   ""
+  ],
+  [
+   "FAM-103",
+   "Miriam Lerner",
+   "Mimi",
+   "Family Member (Child / Descendant)",
+   "4 - Great-Grandchildren",
+   "Zev Aryeh Friedman",
+   "Devorah Friedman",
+   "Binyamin Yerachmiel Lerner"
+  ],
+  [
+   "FAM-104",
+   "Binyamin Yerachmiel Lerner",
+   "Binyamin",
+   "Spouse / Partner",
+   "4 - Great-Grandchildren",
+   "",
+   "",
+   "Miriam Lerner"
+  ],
+  [
+   "FAM-105",
+   "Yosef Ariel Lerner",
+   "Yosef Ariel",
+   "Family Member (Child / Descendant)",
+   "5 - Great-Great-Grandchildren",
+   "Binyamin Lerner",
+   "Miriam Lerner",
+   ""
+  ],
+  [
+   "FAM-106",
+   "Esther Gittel Goldberg",
+   "Esther",
+   "Family Member (Child / Descendant)",
+   "4 - Great-Grandchildren",
+   "Zev Aryeh Friedman",
+   "Devorah Friedman",
+   ""
+  ],
+  [
+   "FAM-107",
+   "Yisroel Goldberg",
+   "Yissi",
+   "Spouse / Partner",
+   "4 - Great-Grandchildren",
+   "",
+   "",
+   "Esther Gittel Goldberg"
+  ],
+  [
+   "FAM-108",
+   "Moshe Elazor Goldberg",
+   "Moshe",
+   "Family Member (Child / Descendant)",
+   "5 - Great-Great-Grandchildren",
+   "Yisroel Goldberg",
+   "Esther Gittel Goldberg",
+   ""
+  ],
+  [
+   "FAM-109",
+   "Menachem Dov Goldberg",
+   "Dov",
+   "Family Member (Child / Descendant)",
+   "5 - Great-Great-Grandchildren",
+   "Yisroel Goldberg",
+   "Esther Gittel Goldberg",
+   ""
+  ],
+  [
+   "FAM-110",
+   "Rochel Leah Berry",
+   "Kelly",
+   "Family Member (Child / Descendant)",
+   "4 - Great-Grandchildren",
+   "Zev Aryeh Friedman",
+   "Devorah Friedman",
+   "Yaakov Shlomo Berry"
+  ],
+  [
+   "FAM-111",
+   "Yaakov Shlomo Berry",
+   "Jacob",
+   "Spouse / Partner",
+   "4 - Great-Grandchildren",
+   "",
+   "",
+   "Rochel Leah Berry"
+  ],
+  [
+   "FAM-112",
+   "Avrahom Friedman",
+   "Avi",
+   "Family Member (Child / Descendant)",
+   "4 - Great-Grandchildren",
+   "Zev Aryeh Friedman",
+   "Devorah Friedman",
+   ""
+  ],
+  [
+   "FAM-113",
+   "Aliza Shoshana Friedman",
+   "Aliza",
+   "Family Member (Child / Descendant)",
+   "4 - Great-Grandchildren",
+   "Zev Aryeh Friedman",
+   "Devorah Friedman",
+   ""
+  ],
+  [
+   "FAM-114",
+   "Shoshana Blima Newhouse",
+   "Shoni",
+   "Family Member (Child / Descendant)",
+   "3 - Grandchildren",
+   "Menachem Tzvi Fass",
+   "Chana Malca Fass",
+   ""
+  ],
+  [
+   "FAM-115",
+   "Eliyahu Shraga Feivish Newhouse    Shragie",
+   "",
+   "Family Member (Child / Descendant)",
+   "4 - Great-Grandchildren",
+   "",
+   "Shoshana Blima Newhouse",
+   ""
+  ],
+  [
+   "FAM-116",
+   "Yissacher Aron Newhouse",
+   "Ari",
+   "Family Member (Child / Descendant)",
+   "4 - Great-Grandchildren",
+   "",
+   "Shoshana Blima Newhouse",
+   ""
+  ],
+  [
+   "FAM-117",
+   "Faiga Shaindel Newhouse",
+   "Faigy",
+   "Family Member (Child / Descendant)",
+   "4 - Great-Grandchildren",
+   "",
+   "Shoshana Blima Newhouse",
+   ""
+  ],
+  [
+   "FAM-118",
+   "Sarah Baila Newhouse",
+   "Sarala",
+   "Family Member (Child / Descendant)",
+   "4 - Great-Grandchildren",
+   "",
+   "Shoshana Blima Newhouse",
    ""
   ]
  ],
