@@ -256,14 +256,21 @@ test('names typed in small letters get capitals; a config correction fixes a row
   assert.deepStrictEqual(m.parents, ['F-3']);
 });
 
-test('the same parent written in both columns is read as that parent and their spouse', () => {
+test('a parent written in both columns = that parent only; their children from before get their own column', () => {
   const rows = [H, ['F-1', 'Root Person', 'Ima', 'Family Member', '1', '', '', ''],
     ['F-2', 'Yehudis Yachnes', '', 'Family Member', '2', 'Root Person', '', 'Ben Yachnes'],
     ['F-3', 'Ben Yachnes', '', 'Spouse / Partner', '2', '', '', 'Yehudis Yachnes'],
     ['F-4', 'Nechama Yachnes', '', 'Family Member', '3', 'Ben Yachnes', 'Ben Yachnes', ''],
-    ['F-5', 'Adina Yachnes', '', 'Family Member', '3', 'Yehudis Yachnes', 'Ben Yachnes', '']];
+    ['F-6', 'Chaim Yachnes', '', 'Family Member', '3', 'Ben Yachnes', 'Ben Yachnes', ''],
+    ['F-5', 'Adina Yachnes', '', 'Family Member', '3', 'Yehudis Yachnes', 'Ben Yachnes', ''],
+    ['F-7', 'Simcha Yachnes', '', 'Family Member', '3', 'Yehudis Yachnes', 'Ben Yachnes', '']];
   const f = FT.buildFamily({ familyRows: rows, friendRows: [], rootName: 'Root Person' });
-  assert.deepStrictEqual(f.people.get('F-2').children.sort(), ['F-4', 'F-5']);
-  assert.ok(!f.people.get('F-4').stepOf, 'not drawn as a step-child');
-  assert.ok(f.warnings.some(w => /both parents/.test(w.text)), 'the data check mentions it');
+  assert.deepStrictEqual(f.people.get('F-2').children.sort(), ['F-5', 'F-7']);
+  assert.strictEqual(f.people.get('F-4').stepOf, 'F-3', 'Ben\'s children from before');
+  const L = FT.layoutTree(f.people, f.rootId, { split: 99 });
+  const x = id => L.nodes.find(n => n.id === id).x;
+  assert.strictEqual(x('F-4'), x('F-6'), 'Ben\'s children go down in one column');
+  assert.strictEqual(x('F-5'), x('F-7'), 'the couple\'s children go down in one column');
+  assert.ok(x('F-4') !== x('F-5'), 'two columns side by side');
+  noOverlap(L);
 });

@@ -102,12 +102,21 @@
       const leaves = u.kids.filter(k => k.leaf);
       u.stack = leaves.length >= 2 ? leaves : [];
       u.cols = u.kids.filter(k => !u.stack.includes(k));
-      const parts = u.cols.concat(u.stepKids);
+      // a partner's own children (from before) get their own column too, beside the couple's
+      const sleaves = u.stepKids.filter(k => k.leaf);
+      u.sstack = sleaves.length >= 2 ? sleaves : [];
+      u.scols = u.stepKids.filter(k => !u.sstack.includes(k));
+      const parts = u.cols.concat(u.scols);
       let w = parts.reduce((s, k) => s + k.width, 0), n = parts.length;
       if (u.stack.length) {
         u.stackW = o.stackIndent + Math.max(...u.stack.map(k => k.ownW));
         w += u.stackW; n += 1;
         rowH[gen + 1] = Math.max(rowH[gen + 1] || o.cardH, u.stack.length * o.cardH + (u.stack.length - 1) * o.stackGap);
+      }
+      if (u.sstack.length) {
+        u.sstackW = o.stackIndent + Math.max(...u.sstack.map(k => k.ownW));
+        w += u.sstackW; n += 1;
+        rowH[gen + 1] = Math.max(rowH[gen + 1] || o.cardH, u.sstack.length * o.cardH + (u.sstack.length - 1) * o.stackGap);
       }
       parts.forEach(k => { if (k.block) rowH[gen + 1] = Math.max(rowH[gen + 1] || o.cardH, k.height); });
       u.gap = parts.some(k => !k.leaf) ? o.branchGap : o.siblingGap;
@@ -165,12 +174,26 @@
       if (u.stepKids.length) {
         const px = x0 + o.cardW + o.coupleGap + o.cardW / 2, py = y + o.cardH, by = busY - 10;
         const xs = [];
-        u.stepKids.forEach(k => {
+        (u.scols || u.stepKids).forEach(k => {
           placeChart(k, cx, { busY: by, fromX: px, fromY: py });
           const x = first(k).x + o.cardW / 2;
           xs.push(x); d += `M ${x} ${by} V ${childTop} `;
           cx += k.width + u.gap;
         });
+        if (u.sstack && u.sstack.length) {
+          const stackX = cx + o.stackIndent, spineX = cx + o.stackIndent / 2;
+          let lastMid = childTop;
+          u.sstack.forEach((k, i) => {
+            const ky = childTop + i * (o.cardH + o.stackGap);
+            k.gen = u.gen + 1;
+            putMembers(k, stackX, ky, { stacked: true, spineX, busY: by, fromX: px, fromY: py });
+            lastMid = ky + o.cardH / 2;
+            d += `M ${spineX} ${lastMid} H ${stackX} `;
+          });
+          d += `M ${spineX} ${by} V ${lastMid} `;
+          xs.push(spineX);
+          cx += u.sstackW + u.gap;
+        }
         d += `M ${px} ${py} V ${by} M ${Math.min(px, ...xs)} ${by} H ${Math.max(px, ...xs)} `;
       }
       if (d) lines.push({ d });

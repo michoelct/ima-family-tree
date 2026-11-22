@@ -167,19 +167,9 @@
     // a name typed in small letters gets its capitals: "Mindy kohn" -> "Mindy Kohn" (in names and the parent / spouse columns)
     const caps = v => (v ? String(v).replace(/(^|[\s-])(\p{Ll})/gu, (m, a, ch) => a + ch.toUpperCase()) : v);
     familyRecs.forEach(r => { ['name', 'parent1', 'parent2', 'spouse'].forEach(k => { r[k] = caps(r[k]); }); });
-    // the same parent written in both columns (e.g. "Benyamin Yachnes" twice): the second is that parent's
-    // husband or wife from their own row — so the children hang from the couple, not as a step-family
-    const byName = new Map(familyRecs.map(r => [norm(splitMemorial(r.name).name), r]));
-    const twice = new Map();
-    familyRecs.forEach(r => {
-      if (!r.parent1 || norm(splitMemorial(r.parent1).name) !== norm(splitMemorial(r.parent2 || '').name)) return;
-      const par = byName.get(norm(splitMemorial(r.parent1).name));
-      if (!par || !par.spouse) return;
-      r.parent2 = par.spouse;
-      const k = r.parent1;
-      if (!twice.has(k)) twice.set(k, { spouse: par.spouse, rows: [] });
-      twice.get(k).rows.push(r.name);
-    });
+    // the same parent written in both columns (e.g. "Benyamin Yachnes" twice) means just that parent — their
+    // children from before the marriage, drawn under them beside the couple's own children
+    familyRecs.forEach(r => { if (r.parent1 && norm(splitMemorial(r.parent1).name) === norm(splitMemorial(r.parent2 || '').name)) r.parent2 = ''; });
     const friendRecs = friendRecords(input.friendRows);
 
     const spelling = new Map();
@@ -216,7 +206,6 @@
     }
 
     familyRecs.forEach(r => addPerson(r, 'family', 'sheet'));
-    twice.forEach((v, k) => warn('spelling', `${v.rows.length} row${v.rows.length > 1 ? 's' : ''} (${v.rows.join(', ')}) give ${k.trim()} as both parents — read as ${k.trim()} & ${v.spouse.trim()}. Fixing Parent 2 in the sheet makes it certain.`, []));
     friendRecs.forEach(r => addPerson(r, 'friend', 'sheet'));
 
     let extraN = 0;
