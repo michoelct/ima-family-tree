@@ -267,12 +267,21 @@ input:focus-visible, select:focus-visible, button:focus-visible { outline: 3px s
   border-top: 0.25mm solid #111; margin-top: calc(1.3mm * var(--k)); padding-top: 0.7mm; white-space: nowrap; }
 .size-row { align-items: center; gap: 8px; flex-wrap: wrap; }
 .size-row input { width: 76px; }
-.psign { text-align: center; padding: 20mm 10mm; }
-.psign h1 { font-family: var(--serif); font-size: 34pt; color: var(--plum-900); margin: 0 0 6mm; }
-.psign p { font-size: 16pt; color: #444; margin: 0 0 10mm; }
-.psign .q { width: 120mm; height: 120mm; margin: 0 auto; }
-.psign .q svg { width: 100%; height: 100%; }
-.psign .url { font-size: 11pt; color: #666; margin-top: 6mm; word-break: break-all; }
+.psign { box-sizing: border-box; height: 279mm; padding: 9mm 11mm 8mm; display: flex; flex-direction: column; text-align: center; background: #f5eedc; color: #111;
+  font-family: 'Old Standard TT', Georgia, serif; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+.psign .mast { font-family: 'Playfair Display', Georgia, serif; font-weight: 900; font-size: 31pt; line-height: 1; text-transform: uppercase; border-top: 1.2mm solid #111; padding-top: 3mm; white-space: nowrap; }
+.psign .dateline { display: flex; justify-content: space-between; font-size: 10pt; font-weight: 700; text-transform: uppercase; letter-spacing: 0.6pt;
+  border-top: 0.4mm solid #111; border-bottom: 0.4mm solid #111; margin-top: 3mm; padding: 1.4mm 0; }
+.psign .head { font-family: 'Playfair Display', Georgia, serif; font-weight: 900; font-size: 34pt; line-height: 1.05; margin-top: 8mm; }
+.psign .sub { font-style: italic; font-size: 14pt; margin-top: 2mm; }
+.psign .cols { display: grid; grid-template-columns: 1fr 1fr 1fr; margin: 7mm 0; border-top: 0.3mm solid #111; border-bottom: 0.3mm solid #111; text-align: left; }
+.psign .step { display: flex; gap: 3mm; padding: 3mm 4mm; font-size: 12pt; line-height: 1.3; }
+.psign .step + .step { border-left: 0.3mm solid #111; }
+.psign .step b { font-family: 'Playfair Display', Georgia, serif; font-weight: 900; font-size: 26pt; line-height: 0.9; }
+.psign .q { width: 105mm; height: 105mm; margin: 0 auto; background: #fff; padding: 4mm; box-sizing: border-box; }
+.psign .q svg { width: 100%; height: 100%; display: block; }
+.psign .url { font-size: 10pt; margin-top: 3mm; word-break: break-all; }
+.psign .ribbon { margin-top: auto; font-family: 'Playfair Display', Georgia, serif; font-style: italic; font-weight: 700; font-size: 24pt; border-top: 0.4mm solid #111; padding-top: 3mm; }
 .pposter-title { font-family: var(--serif); font-size: 28pt; color: var(--plum-900); text-align: center; margin: 0 0 4mm; }
 .pposter-wrap { position: relative; }
 

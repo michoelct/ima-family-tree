@@ -744,11 +744,26 @@
     const saved = store.get('ft.appUrl');
     return (saved || cfg.appUrl || (location.origin + location.pathname)).replace(/index\.html$/, '');
   }
-  function qrSvg(text, cell) {
+  /** A QR code as one small SVG: each row's dark run is one rectangle (about a quarter of the
+   *  library's one-square-per-dot drawing), so 100+ badges print quickly. */
+  function qrSvg(text) {
     const q = qrcode(0, 'M'); q.addData(text); q.make();
-    const wrap = document.createElement('div');
-    wrap.innerHTML = q.createSvgTag({ cellSize: cell || 4, margin: 0, scalable: true });
-    return wrap.firstChild;
+    const n = q.getModuleCount();
+    let d = '';
+    for (let y = 0; y < n; y++) {
+      for (let x = 0; x < n;) {
+        if (!q.isDark(y, x)) { x++; continue; }
+        const s = x; while (x < n && q.isDark(y, x)) x++;
+        d += 'M' + s + ' ' + y + 'h' + (x - s) + 'v1h' + (s - x) + 'z';
+      }
+    }
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svg.setAttribute('viewBox', '0 0 ' + n + ' ' + n);
+    svg.setAttribute('shape-rendering', 'crispEdges');
+    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    path.setAttribute('d', d);
+    svg.append(path);
+    return svg;
   }
   function badgePeople() {
     return [...fam.people.values()].filter(p => p.source === 'sheet' && !p.memorial).sort((a, b) => (a.kind === b.kind ? a.order - b.order : a.kind === 'family' ? -1 : 1));
@@ -811,10 +826,13 @@
     let st = $('pageStyle');
     if (!st) { st = el('style', { id: 'pageStyle' }); document.head.append(st); }
     st.textContent = `@page { size: ${page}; margin: 8mm; }`;
-    document.body.classList.add('printing', cls);
-    const done = () => { document.body.classList.remove('printing', cls); root.textContent = ''; window.removeEventListener('afterprint', done); };
+    const classes = ['printing'].concat(cls.split(/\s+/).filter(Boolean));
+    document.body.classList.add(...classes);
+    const done = () => { document.body.classList.remove(...classes); root.textContent = ''; window.removeEventListener('afterprint', done); };
     window.addEventListener('afterprint', done);
-    setTimeout(() => window.print(), 150);
+    // wait for the badge fonts, so the print preview is not redrawn when they arrive
+    const fonts = document.fonts && document.fonts.ready ? Promise.race([document.fonts.ready, new Promise(r => setTimeout(r, 3000))]) : Promise.resolve();
+    fonts.then(() => setTimeout(() => window.print(), 100));
   }
   /** The line under a badge name: how this person belongs to the birthday girl. */
   function badgeLine(p) {
@@ -865,13 +883,27 @@
       root.append(grid);
     });
   }
+  /** The table sign: a newspaper front page with one big QR code, matching the badges. */
   function printSign() {
     const base = appUrl();
+    const np = cfg.newspaper || {};
     doPrint('p-sign', 'A4 portrait', root => {
-      const q = el('div', { class: 'q' }); q.append(qrSvg(base, 8));
-      root.append(el('div', { class: 'psign' }, el('h1', { text: cfg.title }),
-        el('p', { text: 'Scan with your phone camera to explore the family tree — then scan anyone’s badge to see how you’re related.' }),
-        q, el('div', { class: 'url', text: base })));
+      const q = el('div', { class: 'q' }); q.append(qrSvg(base));
+      root.append(el('div', { class: 'psign' },
+        el('div', { class: 'mast', text: np.masthead || 'The Family Journal' }),
+        el('div', { class: 'dateline' },
+          el('span', { text: np.volume || 'Vol. I' }),
+          el('span', { text: np.edition || 'Special Birthday Edition' }),
+          el('span', { text: np.date || '' })),
+        el('div', { class: 'head', text: 'Extra! Extra! Meet the family' }),
+        el('div', { class: 'sub', text: cfg.subtitle || '' }),
+        el('div', { class: 'cols' },
+          el('div', { class: 'step' }, el('b', { text: '1' }), el('span', { text: 'Open your phone camera and point it at the code.' })),
+          el('div', { class: 'step' }, el('b', { text: '2' }), el('span', { text: 'Find your name — or scan your own badge.' })),
+          el('div', { class: 'step' }, el('b', { text: '3' }), el('span', { text: 'Scan anyone’s badge to see how you’re related.' }))),
+        q,
+        el('div', { class: 'url', text: base }),
+        el('div', { class: 'ribbon', text: np.ribbon || ('Happy Birthday, ' + cfg.rootTitle + '!') })));
     });
   }
   function printPoster(size) {
