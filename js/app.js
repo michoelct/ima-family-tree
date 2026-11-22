@@ -918,6 +918,11 @@
       el('option', { value: 'press', text: 'Press pass — a reporter’s badge from the same newspaper' }),
       el('option', { value: 'plain', text: 'Plain — cut out or stick on' }));
     style.value = store.get('ft.badgeStyle') || 'news';
+    const mast = el('select', { 'aria-label': 'Name at the top of the badge' },
+      el('option', { value: 'all', text: (cfg.newspaper && cfg.newspaper.masthead || 'The Family Journal') + ' — the same on every badge' }),
+      el('option', { value: 'own', text: 'Each person’s own family name — e.g. “The Worch Family Journal”' }));
+    mast.value = store.get('ft.badgeMast') || 'all';
+    mast.onchange = () => store.set('ft.badgeMast', mast.value);
     const num = (v, d) => { const n = parseFloat(v); return n >= 40 && n <= 150 ? n : d; };
     const bw = el('input', { type: 'number', min: 40, max: 150, step: 1, value: store.get('ft.badgeW') || 90, 'aria-label': 'Badge width in mm' });
     const bh = el('input', { type: 'number', min: 40, max: 150, step: 1, value: store.get('ft.badgeH') || 64, 'aria-label': 'Badge height in mm' });
@@ -940,9 +945,10 @@
         el('h3', { text: 'Print' }),
         el('p', { class: 'muted', text: 'Badges link to each person’s ID (FAM-014). After printing, don’t re-number or sort the sheet — new people can be added at the bottom any time.' }),
         el('label', { text: 'Badge style' }), style, sizeRow,
+        el('label', { text: 'Newspaper name on the badges' }), mast,
         el('p', { class: 'muted', text: 'Measure the clear slot inside one holder (below the zip strip) and set the card 2–3 mm smaller each way. Print one page and slide a card in before printing them all.' }),
         el('div', { class: 'row' },
-          el('button', { class: 'btn primary', onclick: () => printBadges(style.value, num(bw.value, 90), num(bh.value, 64)) }, '🏷️ Name badges (' + people.length + ')'),
+          el('button', { class: 'btn primary', onclick: () => printBadges(style.value, num(bw.value, 90), num(bh.value, 64), mast.value) }, '🏷️ Name badges (' + people.length + ')'),
           el('button', { class: 'btn', onclick: printSign }, '🪧 Table sign (one big QR)')),
         el('label', { text: 'Tree poster' }), pstyle,
         el('label', { text: 'Paper' }), paper,
@@ -982,10 +988,20 @@
     return p.id === fam.rootId ? 'The birthday girl!' : r && r.kind !== 'none' ? cfg.rootTitle + '’s ' + (r.word || r.label) : 'Generation ' + p.gen;
   }
   /** Name badges. 'news' = newspaper cards cut to the badge-holder slot (wMm x hMm); 'plain' = the original sheet. */
-  function printBadges(style, wMm, hMm) {
+  /** The family name a person goes by: the last word of their name that the parents or spouse also carry
+   *  (some rows add a nickname at the end), so a married woman gets her married name. */
+  function surnameOf(p) {
+    const words = p.name.split(' ');
+    const kin = p.parents.concat(p.spouse ? [p.spouse] : []).map(id => fam.people.get(id)).filter(Boolean).map(k => FT.norm(k.name).split(' '));
+    return words.slice().reverse().find(w => kin.some(k => k.includes(FT.norm(w)))) || words[words.length - 1];
+  }
+  function printBadges(style, wMm, hMm, mastMode) {
     const base = appUrl();
     const news = style !== 'plain';
     const np = cfg.newspaper || {};
+    const journal = p => (mastMode === 'own' ? 'The ' + surnameOf(p) + ' Family Journal' : (np.masthead || 'The Family Journal'));
+    // a long family name shrinks the masthead so it stays on one line
+    const mastFit = t => `font-size:calc(15pt * var(--k) * ${Math.min(1, 24 / Math.max(24, t.length)).toFixed(3)})`;
     doPrint(news ? 'p-badges p-news' : 'p-badges', 'A4 portrait', root => {
       const grid = el('div', { class: news ? 'nbadges' : 'badges' });
       if (news) {
@@ -996,7 +1012,9 @@
         const q = el('div', { class: 'q' }); q.append(qrSvg(base + '?p=' + encodeURIComponent(p.id), 4));
         const line = badgeLine(p);
         if (!news) {
-          grid.append(el('div', { class: 'pbadge' }, q, el('div', { class: 'who' },
+          const pc = colourOf(p.id);
+          grid.append(el('div', { class: 'pbadge' + (pc ? ' br' : ''), style: pc ? `--br:${pc}` : null }, q, el('div', { class: 'who' },
+            el('div', { class: 'jn', text: journal(p) }),
             el('div', { class: 'bn', text: display(p) }), el('div', { class: 'fn', text: p.name }), el('div', { class: 'gl', text: line }),
             el('div', { class: 'scan', text: 'Scan me to see how we’re related' }))));
           return;
@@ -1006,15 +1024,12 @@
         const bc = colourOf(p.id);
         if (style === 'press') {
           // the press pass the family chose: navy PRESS bar, red rule, the name in big bold letters, a big QR code
-          // the surname: the last word of the name that the parents or spouse also carry (some rows add a nickname at the end)
-          const words = p.name.split(' ');
-          const kin = p.parents.concat(p.spouse ? [p.spouse] : []).map(id => fam.people.get(id)).filter(Boolean).map(k => FT.norm(k.name).split(' '));
-          const surname = words.slice().reverse().find(w => kin.some(k => k.includes(FT.norm(w)))) || words[words.length - 1];
+          const surname = surnameOf(p);
           const first = nm.split(' ').includes(surname) ? nm.replace(new RegExp('\\s*' + surname.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$'), '') || nm : nm;
           const longest = Math.max(first.length, surname.length);
           const fit = longest > 13 ? 'f3' : longest > 10 ? 'f2' : longest > 7 ? 'f1' : '';
-          grid.append(el('div', { class: 'nbadge press', style: `width:${wMm}mm;height:${hMm}mm` },
-            el('div', { class: 'pbar', text: 'PRESS' }),
+          grid.append(el('div', { class: 'nbadge press', style: `width:${wMm}mm;height:${hMm}mm` + (bc ? `;--br:${bc}` : '') },
+            el('div', { class: 'pbar' }, el('div', { text: 'PRESS' }), el('div', { class: 'pjournal', text: journal(p) })),
             el('div', { class: 'prule' }),
             el('div', { class: 'pbody' },
               el('div', { class: 'pname ' + fit }, el('span', { text: first }), surname && surname !== first ? el('span', { text: surname }) : null,
@@ -1024,7 +1039,7 @@
         }
         grid.append(el('div', { class: 'nbadge', style: `width:${wMm}mm;height:${hMm}mm` + (bc ? `;--br:${bc}` : '') },
           bc ? el('div', { class: 'bstripe' }) : null,
-          el('div', { class: 'mast', text: np.masthead || 'The Family Journal' }),
+          el('div', { class: 'mast', style: mastFit(journal(p)), text: journal(p) }),
           el('div', { class: 'dateline' },
             el('span', { text: np.date || (np.volume || 'Vol. I') }),
             el('span', { text: np.occasion || np.edition || 'Special Birthday Edition' })),

@@ -317,6 +317,8 @@ body.news .lines .tree-line { stroke: #6d6656; }
 .pbadge .q { width: 30mm; height: 30mm; flex-shrink: 0; }
 .pbadge .q svg { width: 100%; height: 100%; }
 .pbadge .who { min-width: 0; }
+.pbadge.br { border-left: 3mm solid var(--br); -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+.pbadge .jn { font-family: 'Playfair Display', Georgia, serif; font-weight: 700; font-size: 9pt; text-transform: uppercase; letter-spacing: .5pt; color: #555; margin-bottom: 2mm; }
 .pbadge .bn { font-family: var(--serif); font-size: 26pt; font-weight: 700; color: var(--plum-900); line-height: 1.05; }
 .pbadge .fn { font-size: 11pt; color: #444; margin-top: 2mm; }
 .pbadge .gl { font-size: 9pt; color: var(--plum-600); margin-top: 2mm; }
@@ -373,7 +375,8 @@ body.news .lines .tree-line { stroke: #6d6656; }
 .nbadge.press { padding: 0; background: #f7f5ef; font-family: 'Inter', Arial, sans-serif; color: #0f1e45; }
 .nbadge.press .pbar { background: #0f1e45; color: #fff; text-align: center; font-weight: 800; font-size: calc(30pt * var(--k)); letter-spacing: calc(1.5pt * var(--k));
   line-height: 1; padding: calc(2.2mm * var(--k)) 0 calc(1.8mm * var(--k)); flex-shrink: 0; }
-.nbadge.press .prule { height: calc(1.3mm * var(--k)); background: #d3202a; flex-shrink: 0; }
+.nbadge.press .prule { height: calc(1.6mm * var(--k)); background: var(--br, #d3202a); flex-shrink: 0; } /* the family branch colour (red for Ima) */
+.nbadge.press .pjournal { font-weight: 600; font-size: calc(6.5pt * var(--k)); letter-spacing: calc(1.2pt * var(--k)); text-transform: uppercase; margin-top: calc(1mm * var(--k)); opacity: .9; }
 .nbadge.press .pbody { flex: 1; display: flex; align-items: center; gap: calc(2.5mm * var(--k)); padding: calc(2mm * var(--k)) calc(3mm * var(--k)); min-height: 0; }
 .nbadge.press .pname { flex: 1; min-width: 0; display: flex; flex-direction: column; font-weight: 800; font-size: calc(22pt * var(--k)); line-height: 1.05; letter-spacing: -0.3pt; }
 .nbadge.press .pname.f1 { font-size: calc(19pt * var(--k)); } .nbadge.press .pname.f2 { font-size: calc(16pt * var(--k)); } .nbadge.press .pname.f3 { font-size: calc(13pt * var(--k)); }
