@@ -118,7 +118,7 @@
 
   // ---------------------------------------------------------------- sun view
   function layoutSun(people, rootId, opts) {
-    const o = Object.assign({ cardW: 120, cardH: 44, slotGap: 6, ringGap: 34, bandW: 15, coreR: 110, padX: 30, padY: 30, padR: 30 }, opts || {});
+    const o = Object.assign({ cardW: 120, cardH: 44, slotGap: 6, ringGap: 50, bandW: 26, coreR: 110, padX: 30, padY: 30, padR: 30 }, opts || {});
     const P = id => people.get(id);
     const nodes = [], lines = [], marriages = [], labels = [];
     const rootP = P(rootId);
@@ -214,10 +214,10 @@
           const rt = (rIn + rOut) / 2, mid = (u.a0 + u.a1) / 2, len = (u.a1 - u.a0) * rt;
           const under = Math.sin(mid) > 0;
           const big = u.a1 - u.a0 > Math.PI ? 1 : 0;
-          const tr = under ? rt + 3.6 : rt - 3.6; // the baseline sits so the letters are centred in the strip
+          const tr = under ? rt + 6 : rt - 6; // the baseline sits so the letters are centred in the strip
           const d = under ? `M ${pt(tr, u.a1 - gap)} A ${tr} ${tr} 0 ${big} 0 ${pt(tr, u.a0 + gap)}`
             : `M ${pt(tr, u.a0 + gap)} A ${tr} ${tr} 0 ${big} 1 ${pt(tr, u.a1 - gap)}`;
-          labels.push({ arc: d, text: name, fits: len > name.length * 7 + 10, member: u.members[0], depth: u.depth });
+          labels.push({ arc: d, text: name, fits: len > name.length * 12.5 + 14, member: u.members[0], depth: u.depth });
         }
       }
     });
