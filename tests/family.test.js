@@ -255,3 +255,15 @@ test('names typed in small letters get capitals; a config correction fixes a row
   assert.strictEqual(m.name, 'Mindy Kohn');
   assert.deepStrictEqual(m.parents, ['F-3']);
 });
+
+test('the same parent written in both columns is read as that parent and their spouse', () => {
+  const rows = [H, ['F-1', 'Root Person', 'Ima', 'Family Member', '1', '', '', ''],
+    ['F-2', 'Yehudis Yachnes', '', 'Family Member', '2', 'Root Person', '', 'Ben Yachnes'],
+    ['F-3', 'Ben Yachnes', '', 'Spouse / Partner', '2', '', '', 'Yehudis Yachnes'],
+    ['F-4', 'Nechama Yachnes', '', 'Family Member', '3', 'Ben Yachnes', 'Ben Yachnes', ''],
+    ['F-5', 'Adina Yachnes', '', 'Family Member', '3', 'Yehudis Yachnes', 'Ben Yachnes', '']];
+  const f = FT.buildFamily({ familyRows: rows, friendRows: [], rootName: 'Root Person' });
+  assert.deepStrictEqual(f.people.get('F-2').children.sort(), ['F-4', 'F-5']);
+  assert.ok(!f.people.get('F-4').stepOf, 'not drawn as a step-child');
+  assert.ok(f.warnings.some(w => /both parents/.test(w.text)), 'the data check mentions it');
+});
