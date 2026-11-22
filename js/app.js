@@ -178,12 +178,23 @@
   const focusFor = () => (focusId && fam.people.has(focusId) ? focusId : (me || fam.rootId));
   const readLike = () => !!lay && (lay.mode === 'list' || lay.mode === 'family'); // read at full size, scroll like a page
   // the family that sits in the middle of the chart and that the tree opens on (cfg.centerFamily: a badge or full name)
-  function centreFamilyId() {
-    const want = FT.norm(cfg.centerFamily || '');
+  function centreFamilyId(name) {
+    const want = FT.norm(name === undefined ? (cfg.centerFamily || '') : name);
     const root = fam && fam.people.get(fam.rootId);
     if (!want || !root) return null;
     const hit = root.children.map(c => fam.people.get(c)).find(p => p && (FT.norm(p.badge) === want || FT.norm(p.name) === want));
     return hit ? hit.id : null;
+  }
+  // the child at the top (12 o'clock) of the Sun view (cfg.sunTop, else the centre family)
+  const sunTopId = () => centreFamilyId(cfg.sunTop || cfg.centerFamily || '');
+  // one shade of a branch colour per family: 0 = the colour itself, then lighter / darker in turn
+  const SHADES = [0, 0.35, -0.28, 0.58, -0.45, 0.18, -0.14, 0.72];
+  function shadeOf(hex, k) {
+    const t = SHADES[(k || 0) % SHADES.length];
+    if (!t) return hex;
+    const n = parseInt(hex.slice(1), 16), c = [n >> 16, (n >> 8) & 255, n & 255];
+    const m = c.map(v => Math.round(t > 0 ? v + (255 - v) * t : v * (1 + t)));
+    return '#' + m.map(v => v.toString(16).padStart(2, '0')).join('');
   }
   function currentMode() { return VIEWS[viewChoice] ? viewChoice : VIEW_DEFAULT[deviceKind()]; }
   function bestChartSplit(vw, vh, hide) {
@@ -205,7 +216,7 @@
       const w = vp.getBoundingClientRect().width || window.innerWidth;
       return FT.layoutFamily(fam.people, focusFor(), { maxW: Math.max(320, Math.min(1100, w - 28)) });
     }
-    if (mode === 'sun') return FT.layoutSun(fam.people, fam.rootId, { centerChild });
+    if (mode === 'sun') return FT.layoutSun(fam.people, fam.rootId, { centerChild: sunTopId() });
     return FT.layoutTree(fam.people, fam.rootId, { split: 99, collapsed, centerChild });
   }
   function relayout() { lay = layoutFor(currentMode()); drawTree(); syncViewButtons(); }
@@ -344,7 +355,7 @@
     const g = svg('g', { transform: `translate(${PADX},${PADY})`, id: 'treeLines' });
     lay.lines.forEach(l => {
       const a = { d: l.d, class: l.cls || 'tree-line' };
-      if (l.cls === 'sun-slice') a.style = `--br:${opt.colours && l.branch ? branchColour.get(l.branch) : '#b99aa6'}`;
+      if (l.cls && l.cls.startsWith('sun-')) a.style = `--br:${opt.colours && l.branch ? shadeOf(branchColour.get(l.branch), l.shade) : '#b99aa6'}`;
       g.append(svg('path', a));
     });
     lay.marriages.forEach(m => g.append(svg('line', { x1: m.x1, x2: m.x2, y1: m.y, y2: m.y, class: 'wed' })));
@@ -1150,7 +1161,7 @@
     let best = null;
     [['landscape', mm[0], mm[1]], ['portrait', mm[1], mm[0]]].forEach(([dir, w, h]) => {
       const pw = (w - 16) * pxPerMm, ph = (h - 16) * pxPerMm - 60;
-      const L = style === 'sun' ? FT.layoutSun(fam.people, fam.rootId, { centerChild: centreFamilyId() })
+      const L = style === 'sun' ? FT.layoutSun(fam.people, fam.rootId, { centerChild: sunTopId() })
         : FT.layoutTree(fam.people, fam.rootId, { split: bestChartSplit(pw + 40, ph + 30, new Set()), centerChild: centreFamilyId() });
       const W = L.width + L.opts.padX + L.opts.padR, H = L.height + 2 * L.opts.padY;
       const k = Math.min(pw / W, ph / H);

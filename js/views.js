@@ -180,16 +180,43 @@
       lines.push({ d: arc(r0, r1, u.a0, u.a1), cls: 'sun-slice', branch: u.branch || null, member: u.members[0], depth: u.depth });
       const mid = (u.a0 + u.a1) / 2, rc = r[u.depth] + o.cardW / 2;
       const n = u.members.length;
+      // a couple turns the same way: the side of the circle is decided once, by the middle of their slice
+      // (deciding it per card turned the two cards at the top of the circle in opposite directions)
+      const flip = Math.cos(mid) < -1e-9;
       u.members.forEach((id, i) => {
         const a = mid + (i - (n - 1) / 2) * slot / r[u.depth];
         const deg = a * 180 / Math.PI;
-        const flip = Math.cos(a) < 0;
         nodes.push({ id, x: cx + rc * Math.cos(a) - o.cardW / 2, y: cy + rc * Math.sin(a) - o.cardH / 2, gen: P(id).gen, rot: flip ? deg + 180 : deg, depth: u.depth });
       });
     });
+    // a faint line from every parent to each of their children, and a thin border round the children of one
+    // couple, so a grandchild's children can be told apart from their cousins with the same family name
+    const pt = (rr, a) => (cx + rr * Math.cos(a)).toFixed(1) + ' ' + (cy + rr * Math.sin(a)).toFixed(1);
+    units.forEach(u => {
+      if (!u.kids.length) return;
+      const pm = (u.a0 + u.a1) / 2;
+      const from = u.depth ? r[u.depth] + o.cardW : Math.min(r[1] * 0.55, r[1] - o.ringGap);
+      u.kids.forEach(k => {
+        const km = (k.a0 + k.a1) / 2, to = r[k.depth] - 2;
+        lines.push({ d: `M ${pt(from, pm)} L ${pt(to, km)}`, cls: 'sun-link', member: k.members[0], depth: k.depth });
+      });
+      if (u.depth) {
+        const d1 = u.depth + 1;
+        lines.push({ d: arc(r[d1] - o.ringGap / 2 + 3, r[d1] + o.cardW + o.ringGap / 2 - 3, u.a0 + 0.002, u.a1 - 0.002), cls: 'sun-group', member: u.members[0], depth: u.depth, group: true });
+      }
+    });
     // every slice gets its branch (the root child it grows from)
-    const tag = (u, b) => { u.kids.forEach(k => { const bb = u.depth === 0 ? k.members[0] : b; lines.forEach(l => { if (l.member === k.members[0] && l.depth === k.depth) l.branch = bb; }); tag(k, bb); }); };
-    tag(top, null);
+    // ...and a shade: each of the root's grandchildren's families gets its own shade of the branch colour,
+    // which their children and grandchildren keep (brothers and sisters always share their parents' shade)
+    const tag = (u, b, sh) => {
+      u.kids.forEach((k, i) => {
+        const bb = u.depth === 0 ? k.members[0] : b;
+        const ks = k.depth === 2 ? i : sh;
+        lines.forEach(l => { if (l.member === k.members[0] && (l.group ? l.depth === k.depth : l.depth === k.depth)) { l.branch = bb; l.shade = ks; } });
+        tag(k, bb, ks);
+      });
+    };
+    tag(top, null, 0);
     const out = people.size ? [...people.values()].filter(p => onTree(p) && !claimed.has(p.id)).map(p => p.id) : [];
     return { mode: 'sun', nodes, lines, marriages, toggles: [], rows: [], unlinked: [], notShown: out, labels, width: 2 * R, height: 2 * R, opts: o };
   }

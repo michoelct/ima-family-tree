@@ -12,6 +12,7 @@ window.FT_CONFIG = {
   rootName: 'Shulamit Feder',   // the person the tree grows from
   rootTitle: 'Ima',             // what everyone calls her
   centerFamily: 'Malca',        // this child's family sits in the middle of the chart, and the tree opens on it
+  sunTop: 'Moish',              // this child sits at the top (12 o'clock) of the Sun view
 
   // How often an open page checks the sheet for new rows (seconds)
   refreshSeconds: 45,
