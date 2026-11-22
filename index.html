@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,600;0,700;0,900;1,700&family=Old+Standard+TT:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/app.css?v=16">
+  <link rel="stylesheet" href="css/app.css?v=17">
 </head>
 <body>
   <header class="top">
@@ -35,14 +35,21 @@
         <input id="treeFind" type="search" placeholder="Find someone in the tree" autocomplete="off" aria-label="Find someone in the tree">
         <div id="treeFindList" class="find-list" hidden></div>
         <div class="tree-tools">
-          <div class="seg" role="group" aria-label="How to show the tree">
-            <button id="viewList" aria-pressed="false" title="Read the family top to bottom">☰ List</button>
-            <button id="viewChart" aria-pressed="false" title="The family as a chart">⊤ Chart</button>
+          <div class="view-pick">
+            <button id="viewBtn" class="tool view-btn" aria-haspopup="true" aria-expanded="false" aria-controls="viewMenu">View: <b id="viewName">…</b> <span aria-hidden="true">▾</span></button>
+            <div id="viewMenu" class="view-menu" role="menu" aria-label="How to show the family" hidden>
+              <div id="viewOpts" class="vm-opts">
+                <label><input type="checkbox" id="optColours"> Colour each family branch</label>
+                <label><input type="checkbox" id="optNews"> Newspaper look (matches the badges)</label>
+                <p class="muted" id="viewDevice"></p>
+              </div>
+            </div>
           </div>
           <button id="openAll" class="tool" hidden>Open all families</button>
           <button id="closeAll" class="tool" hidden>Close families</button>
         </div>
       </div>
+      <div id="branchBar" class="branch-bar" aria-label="Jump to a family" hidden></div>
       <div id="pathBar" class="path-bar" hidden>
         <div class="path-text"><strong id="pathTitle"></strong><span id="pathSub"></span></div>
         <button id="pathClear" aria-label="Clear highlighted line">✕</button>
@@ -136,11 +143,12 @@
   <div id="toast" class="toast" hidden></div>
   <div id="printRoot" class="print-root"></div>
 
-  <script src="js/config.js?v=16"></script>
-  <script src="js/vendor/qrcode.min.js?v=16"></script>
-  <script src="js/data.js?v=16"></script>
-  <script src="js/relations.js?v=16"></script>
-  <script src="js/layout.js?v=16"></script>
-  <script src="js/app.js?v=16"></script>
+  <script src="js/config.js?v=17"></script>
+  <script src="js/vendor/qrcode.min.js?v=17"></script>
+  <script src="js/data.js?v=17"></script>
+  <script src="js/relations.js?v=17"></script>
+  <script src="js/views.js?v=17"></script>
+  <script src="js/layout.js?v=17"></script>
+  <script src="js/app.js?v=17"></script>
 </body>
 </html>

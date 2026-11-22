@@ -41,8 +41,23 @@
   let t = { x: 0, y: 0, k: 1 };
   let firstRender = true;
   let fromSnapshot = false;          // the first copy came from the bundled snapshot, not an earlier visit
-  // how the tree is drawn: 'list' (indented, top to bottom) or 'chart'; null = pick for the screen
-  let viewChoice = store.get('ft.view2');
+  // How the tree is drawn — chosen in the View menu and remembered separately for a phone and a bigger screen:
+  // 'family' (one person in the middle), 'chart' (generations, top down), 'sun' (a circle), 'list' (a page).
+  const VIEWS = {
+    family: { name: 'Family', icon: '👪', text: 'One person in the middle — parents above, children and grandchildren below. Tap anyone to move to them. Best on a phone.' },
+    chart: { name: 'Generations', icon: '⊤', text: 'Everyone, one row per generation, top down. Best on a big screen.' },
+    sun: { name: 'Sun', icon: '☀', text: 'The whole family in one circle — ' + cfg.rootTitle + ' in the middle, each family a coloured slice.' },
+    list: { name: 'List', icon: '☰', text: 'Read the family top to bottom, like a page.' }
+  };
+  const VIEW_DEFAULT = { phone: 'family', wide: 'chart' };
+  const deviceKind = () => (window.innerWidth < 700 ? 'phone' : 'wide');
+  let viewChoice = store.get('ft.view.' + deviceKind());
+  // a link can open a view: ?view=family|chart|sun|list (not saved — the menu saves a choice)
+  try { const v = new URLSearchParams(location.search).get('view'); if (v && VIEWS[v]) viewChoice = v; } catch (e) { /* ignore */ }
+  let focusId = store.get('ft.focus');   // who the Family view is centred on (else you, else the root)
+  const opt = { colours: store.get('ft.colours') !== false, news: store.get('ft.news') === true };
+  const BRANCH_COLOURS = ['#2e7d6b', '#c0583b', '#3d6fb0', '#a1497e', '#b8892b', '#6b5aa8', '#4f7a2a', '#9c4a2f'];
+  let branchOf = new Map(), branchColour = new Map();
   const collapsed = new Set();       // families that are closed (the descendant's id)
   let collapseReady = false;
   const GEN_NAMES = { 1: cfg.rootTitle + ' & elders', 2: 'children', 3: 'grandchildren', 4: 'great-grandchildren', 5: 'great-great-grandchildren' };
@@ -102,6 +117,12 @@
   function render() {
     fam = FT.buildFamily({ familyRows: data.familyRows, friendRows: data.friendRows, extras: cfg.extras, rootName: cfg.rootName });
     restoreMe();
+    branchOf = FT.branchMap(fam.people, fam.rootId);
+    branchColour = new Map();
+    (fam.people.get(fam.rootId) ? fam.people.get(fam.rootId).children : []).slice()
+      .sort((a, b) => fam.people.get(a).order - fam.people.get(b).order)
+      .forEach((c, i) => branchColour.set(c, BRANCH_COLOURS[i % BRANCH_COLOURS.length]));
+    renderBranchBar();
     if (!collapseReady) { collapseReady = true; defaultCollapse(currentMode()); }
     relayout();
     if (path && (!fam.people.has(path.a) || !fam.people.has(path.b))) clearPath();
@@ -153,8 +174,9 @@
   // chart whose lower generations turn into indented columns at the level that fits the screen best — so the
   // view keeps working as the family grows.
   const rootGen = () => (fam && fam.people.get(fam.rootId) ? fam.people.get(fam.rootId).gen || 1 : 1);
-  // Everyone starts on the full chart: one row per generation. The List button is there for anyone who wants it.
-  function autoMode() { return 'chart'; }
+  const colourOf = id => (branchOf.has(id) ? branchColour.get(branchOf.get(id)) : null);
+  const focusFor = () => (focusId && fam.people.has(focusId) ? focusId : (me || fam.rootId));
+  const readLike = () => !!lay && (lay.mode === 'list' || lay.mode === 'family'); // read at full size, scroll like a page
   // the family that sits in the middle of the chart and that the tree opens on (cfg.centerFamily: a badge or full name)
   function centreFamilyId() {
     const want = FT.norm(cfg.centerFamily || '');
@@ -163,7 +185,7 @@
     const hit = root.children.map(c => fam.people.get(c)).find(p => p && (FT.norm(p.badge) === want || FT.norm(p.name) === want));
     return hit ? hit.id : null;
   }
-  function currentMode() { return viewChoice === 'list' || viewChoice === 'chart' ? viewChoice : autoMode(); }
+  function currentMode() { return VIEWS[viewChoice] ? viewChoice : VIEW_DEFAULT[deviceKind()]; }
   function bestChartSplit(vw, vh, hide) {
     const g0 = rootGen();
     const maxGen = Math.max(g0, ...[...fam.people.values()].map(p => p.gen || 0));
@@ -179,12 +201,17 @@
   function layoutFor(mode) {
     const centerChild = centreFamilyId();
     if (mode === 'list') return FT.layoutTree(fam.people, fam.rootId, { split: rootGen(), collapsed, centerChild });
+    if (mode === 'family') {
+      const w = vp.getBoundingClientRect().width || window.innerWidth;
+      return FT.layoutFamily(fam.people, focusFor(), { maxW: Math.max(320, Math.min(1100, w - 28)) });
+    }
+    if (mode === 'sun') return FT.layoutSun(fam.people, fam.rootId, { centerChild });
     return FT.layoutTree(fam.people, fam.rootId, { split: 99, collapsed, centerChild });
   }
   function relayout() { lay = layoutFor(currentMode()); drawTree(); syncViewButtons(); }
   // the list reads like a page: zoom buttons step aside, Fit becomes 'Top'
   function syncZoomButtons() {
-    const list = lay && lay.mode === 'list';
+    const list = readLike();
     $('zoomIn').hidden = list; $('zoomOut').hidden = list;
     $('zoomFit').textContent = list ? 'Top' : 'Fit';
   }
@@ -202,6 +229,7 @@
   // open every closed family above the given people, so they are on the tree
   function ensureVisible(ids) {
     let changed = false;
+    if (lay && (lay.mode === 'family' || lay.mode === 'sun')) return false; // nothing is ever closed there
     for (let round = 0; round < 8; round++) {
       const missing = ids.filter(id => fam.people.has(id) && fam.people.get(id).onTree !== false && !nodeOf(id));
       if (!missing.length) break;
@@ -223,24 +251,64 @@
     if (before && after) { t.x = sx - (PX() + after.x) * t.k; t.y = sy - (PY() + after.y) * t.k; apply(); }
   }
   function setView(mode) {
-    viewChoice = mode; store.set('ft.view2', mode);
+    viewChoice = mode; store.set('ft.view.' + deviceKind(), mode);
     defaultCollapse(mode);
     lay = layoutFor(mode);
     if (path) ensureVisible(path.rel.path);
     drawTree(); syncViewButtons();
-    if (path) fitPath(); else if (me && nodeOf(me)) centerOn(me); else fitAll();
+    if (path && mode !== 'family') fitPath(); else if (me && nodeOf(me) && mode !== 'family' && mode !== 'sun') centerOn(me); else fitAll();
+  }
+  // the Family view moves to whoever you tap
+  function setFocus(id) {
+    if (!fam.people.has(id)) return;
+    focusId = id; store.set('ft.focus', id);
+    if (lay && lay.mode === 'family') { relayout(); fitAll(); }
   }
   function syncViewButtons() {
     syncZoomButtons();
     const m = lay ? lay.mode : currentMode();
-    $('viewList').classList.toggle('on', m === 'list'); $('viewList').setAttribute('aria-pressed', m === 'list');
-    $('viewChart').classList.toggle('on', m === 'chart'); $('viewChart').setAttribute('aria-pressed', m === 'chart');
+    $('viewName').textContent = VIEWS[m] ? VIEWS[m].name : '';
+    $('viewMenu').querySelectorAll('[data-mode]').forEach(b => { b.classList.toggle('on', b.dataset.mode === m); b.setAttribute('aria-checked', b.dataset.mode === m); });
     const anyClosed = lay && lay.toggles.some(g => g.more);
     $('openAll').hidden = !anyClosed;
     $('closeAll').hidden = anyClosed || !lay || !lay.toggles.length;
   }
-  $('viewList').onclick = () => setView('list');
-  $('viewChart').onclick = () => setView('chart');
+  // ---------- the View menu ----------
+  (function buildViewMenu() {
+    const menu = $('viewMenu');
+    Object.keys(VIEWS).forEach(k => menu.insertBefore(el('button', { 'data-mode': k, role: 'menuitemradio', class: 'vm-item', onclick: () => { closeViewMenu(); setView(k); } },
+      el('span', { class: 'vm-icon', text: VIEWS[k].icon }), el('span', { class: 'vm-text' }, el('b', { text: VIEWS[k].name }), el('small', { text: VIEWS[k].text }))), $('viewOpts')));
+    $('optColours').checked = opt.colours; $('optNews').checked = opt.news;
+    $('optColours').onchange = e => { opt.colours = e.target.checked; store.set('ft.colours', opt.colours); applyLook(); drawTree(); renderBranchBar(); };
+    $('optNews').onchange = e => { opt.news = e.target.checked; store.set('ft.news', opt.news); applyLook(); };
+    $('viewDevice').textContent = 'Saved for this ' + (deviceKind() === 'phone' ? 'phone' : 'screen') + '.';
+    $('viewBtn').onclick = e => { e.stopPropagation(); const open = menu.hidden; menu.hidden = !open; $('viewBtn').setAttribute('aria-expanded', open); };
+    document.addEventListener('click', e => { if (!menu.hidden && !menu.contains(e.target) && e.target !== $('viewBtn')) closeViewMenu(); });
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') closeViewMenu(); });
+  })();
+  function closeViewMenu() { $('viewMenu').hidden = true; $('viewBtn').setAttribute('aria-expanded', 'false'); }
+  function applyLook() {
+    document.body.classList.toggle('news', opt.news);
+    document.body.classList.toggle('colours', opt.colours);
+  }
+  applyLook();
+  // ---------- branch buttons: jump to one of the root's children's families ----------
+  function renderBranchBar() {
+    const bar = $('branchBar');
+    bar.textContent = '';
+    const root = fam && fam.people.get(fam.rootId);
+    if (!root || root.children.length < 2) { bar.hidden = true; return; }
+    bar.hidden = false;
+    [...branchColour.keys()].forEach(id => {
+      const p = fam.people.get(id);
+      bar.append(el('button', { class: 'br-chip', style: opt.colours ? `--br:${branchColour.get(id)}` : null, onclick: () => goBranch(id), title: 'Go to ' + display(p) + '’s family' },
+        el('span', { class: 'br-dot' }), display(p)));
+    });
+  }
+  function goBranch(id) {
+    if (lay.mode === 'family') { setFocus(id); return; }
+    centerOn(id, lay.mode === 'sun' ? 0.75 : 0.7);
+  }
   $('openAll').onclick = () => { collapsed.clear(); relayout(); if (lay.mode === 'chart') fitAll(); };
   $('closeAll').onclick = () => { defaultCollapse('list'); if (!collapsed.size) fam.people.forEach(p => { if (p.blood && p.children.length && p.id !== fam.rootId) collapsed.add(p.id); }); relayout(); fitAll(); };
   let resizeTimer;
@@ -248,16 +316,20 @@
     clearTimeout(resizeTimer);
     resizeTimer = setTimeout(() => {
       if (!fam || !lay) return;
+      // a phone turned sideways can become a 'screen': follow that screen's own choice
+      const v = store.get('ft.view.' + deviceKind()); viewChoice = v;
+      $('viewDevice').textContent = 'Saved for this ' + (deviceKind() === 'phone' ? 'phone' : 'screen') + '.';
       const next = layoutFor(currentMode());
-      if (next.mode !== lay.mode || next.split !== lay.split) { lay = next; drawTree(); syncViewButtons(); if (path) fitPath(); else fitAll(); }
+      if (next.mode !== lay.mode || next.split !== lay.split || (next.mode === 'family' && next.width !== lay.width)) { lay = next; drawTree(); syncViewButtons(); if (path && lay.mode !== 'family') fitPath(); else fitAll(); }
       else if (path) fitPath();
     }, 220);
   });
 
   // ---------- tree ----------
   const PX = () => (lay ? lay.opts.padX : 110), PY = () => (lay ? lay.opts.padY : 36);
-  function cardClass(p) {
-    return 'card' + (p.id === fam.rootId ? ' root' : '') + (p.memorial ? ' memorial' : '') + (p.kind === 'placeholder' ? ' placeholder' : '') + (p.id === me ? ' me' : '');
+  function cardClass(p, n) {
+    return 'card' + (p.id === fam.rootId ? ' root' : '') + (p.memorial ? ' memorial' : '') + (p.kind === 'placeholder' ? ' placeholder' : '') + (p.id === me ? ' me' : '') +
+      (n && n.focus ? ' focus' : '') + (opt.colours && colourOf(p.id) ? ' br' : '');
   }
 
   function drawTree() {
@@ -267,10 +339,14 @@
     const PADX = PX(), PADY = PY();
     const W = stageW(), H = stageH();
     $('stage').style.width = W + 'px'; $('stage').style.height = H + 'px';
-    $('stage').classList.toggle('as-list', lay.mode === 'list');
+    ['list', 'family', 'sun', 'chart'].forEach(m => $('stage').classList.toggle('as-' + m, lay.mode === m));
     lines.setAttribute('width', W); lines.setAttribute('height', H);
     const g = svg('g', { transform: `translate(${PADX},${PADY})`, id: 'treeLines' });
-    lay.lines.forEach(l => g.append(svg('path', { d: l.d, class: 'tree-line' })));
+    lay.lines.forEach(l => {
+      const a = { d: l.d, class: l.cls || 'tree-line' };
+      if (l.cls === 'sun-slice') a.style = `--br:${opt.colours && l.branch ? branchColour.get(l.branch) : '#b99aa6'}`;
+      g.append(svg('path', a));
+    });
     lay.marriages.forEach(m => g.append(svg('line', { x1: m.x1, x2: m.x2, y1: m.y, y2: m.y, class: 'wed' })));
     lines.append(g);
     lines.append(svg('g', { transform: `translate(${PADX},${PADY})`, id: 'hotLines' }));
@@ -278,10 +354,16 @@
     lay.rows.forEach(r => cards.append(el('div', { class: 'row-label', style: `left:12px;top:${PADY + r.y + o.cardH / 2 - 8}px`, text: 'Gen ' + r.gen + (GEN_NAMES[r.gen] ? ' · ' + GEN_NAMES[r.gen] : '') })));
     lay.unlinked.forEach((u, i) => { if (i === 0) cards.append(el('div', { class: 'unlinked-label', style: `left:${PADX + u.x}px;top:${PADY + u.y}px`, text: 'Not linked to ' + cfg.rootTitle + ' yet' })); });
 
+    (lay.labels || []).forEach(l => cards.append(el('div', { class: 'sec-label', style: `left:${PADX + l.x}px;top:${PADY + l.y}px`, text: l.text })));
+    if (lay.moreGrand) cards.append(el('div', { class: 'sec-label more', style: `left:${PADX + lay.width / 2}px;top:${PADY + lay.height + 10}px`, text: '+' + lay.moreGrand + ' grandchildren — tap one of the children to see their family' }));
+    if (lay.mode === 'family' && lay.focus !== fam.rootId) cards.append(el('button', { class: 'up-btn', style: `left:${PADX + lay.width / 2}px;top:${PADY - 6}px`, onclick: () => setFocus(fam.rootId) }, '↑ Back to ' + display(fam.people.get(fam.rootId))));
+
     lay.nodes.forEach(n => {
       const p = fam.people.get(n.id);
       const label = display(p) + zl(p) + ', ' + p.name + (p.id === me ? ' (you)' : '');
-      const b = el('button', { class: cardClass(p), 'data-id': p.id, style: `left:${PADX + n.x}px;top:${PADY + n.y}px;width:${o.cardW}px;height:${o.cardH}px`, 'aria-label': label, onclick: () => tapPerson(p.id) },
+      const col = opt.colours ? colourOf(p.id) : null;
+      const st = `left:${PADX + n.x}px;top:${PADY + n.y}px;width:${n.w || o.cardW}px;height:${n.h || o.cardH}px` + (n.rot != null ? `;transform:rotate(${n.rot.toFixed(2)}deg)` : '') + (col ? `;--br:${col}` : '');
+      const b = el('button', { class: cardClass(p, n), 'data-id': p.id, style: st, 'aria-label': label, onclick: () => tapPerson(p.id) },
         el('div', { class: 'badge' }, display(p), p.memorial ? el('span', { class: 'zl', text: 'z”l' }) : null),
         el('div', { class: 'full', text: p.kind === 'placeholder' ? p.name + ' · not in the sheet yet' : p.name }));
       cards.append(b);
@@ -305,7 +387,7 @@
   const vp = $('viewport'), stage = $('stage');
   function apply() {
     // the list scrolls like a page: keep it from drifting off the screen
-    if (lay && lay.mode === 'list') {
+    if (readLike()) {
       const a = visibleArea(), W = stageW() * t.k, H = stageH() * t.k;
       t.x = W <= a.w ? Math.min(Math.max(t.x, 0), a.w - W) : Math.min(Math.max(t.x, a.w - W - 8), 8);
       t.y = H <= a.h - 90 ? Math.min(Math.max(t.y, -8), a.h - H) : Math.min(Math.max(t.y, a.h - H - 90), 8 + a.top);
@@ -330,7 +412,7 @@
     const h = a.h - a.top;
     let k;
     // the list never shrinks below reading size: if the box is too tall, show its top part
-    if (lay.mode === 'list') k = Math.min(listK(), maxK || 1);
+    if (readLike()) k = Math.min(listK(), maxK || 1);
     else k = clampK(Math.min((a.w - 40) / (x1 - x0), (h - 30) / (y1 - y0), maxK || 1));
     t.k = k;
     t.x = (a.w - (x1 - x0) * k) / 2 - x0 * k;
@@ -338,22 +420,27 @@
     apply();
   }
   function fitAll() {
-    if (lay.mode === 'list') { t.k = listK(); t.x = 0; t.y = visibleArea().top + 8; apply(); return; }
+    if (readLike()) { const a = visibleArea(); t.k = listK(); t.x = lay.mode === 'list' ? 0 : Math.max(0, (a.w - stageW() * t.k) / 2); t.y = a.top + 8; apply(); return; }
     fitBox(0, 0, stageW(), stageH(), 1);
   }
   function centerOn(id, k) {
+    if (lay.mode === 'family') { if (lay.focus !== id) { focusId = id; store.set('ft.focus', id); relayout(); } fitAll(); flashCard(id); return; }
     ensureVisible([id]);
     const n = nodeOf(id); if (!n) return;
     const a = visibleArea(); const o = lay.opts;
-    t.k = lay.mode === 'list' ? listK() : clampK(k || Math.max(t.k, 0.85));
-    t.x = a.w / 2 - (PX() + n.x + o.cardW / 2) * t.k;
-    t.y = a.top + (a.h - a.top) / 2 - (PY() + n.y + o.cardH / 2) * t.k; apply();
+    t.k = readLike() ? listK() : clampK(k || Math.max(t.k, 0.85));
+    t.x = a.w / 2 - (PX() + n.x + (n.w || o.cardW) / 2) * t.k;
+    t.y = a.top + (a.h - a.top) / 2 - (PY() + n.y + (n.h || o.cardH) / 2) * t.k; apply();
+    flashCard(id);
+  }
+  function flashCard(id) {
     const c = document.querySelector(`.card[data-id="${CSS.escape(id)}"]`);
     if (c) { c.classList.remove('flash'); void c.offsetWidth; c.classList.add('flash'); }
   }
   let startT = null; // the view initialView set, so closing the welcome card can redo it if nobody has moved
   function initialView() { initialViewNow(); startT = Object.assign({}, t); }
   function initialViewNow() {
+    if (lay.mode === 'family' || lay.mode === 'sun') { fitAll(); return; }
     if (me && nodeOf(me)) { centerOn(me, 0.85); return; }
     if (lay.mode === 'list') { fitAll(); return; }
     const a = visibleArea();
@@ -404,7 +491,7 @@
     e.preventDefault();
     const r = vp.getBoundingClientRect();
     const mouseWheel = e.deltaMode !== 0 || (e.deltaX === 0 && Math.abs(e.deltaY) >= 50 && Number.isInteger(e.deltaY));
-    if (e.ctrlKey || (mouseWheel && lay.mode !== 'list')) zoomAt(e.clientX - r.left, e.clientY - r.top, t.k * Math.exp(-e.deltaY * (e.ctrlKey ? 0.01 : 0.0015)));
+    if (e.ctrlKey || (mouseWheel && !readLike())) zoomAt(e.clientX - r.left, e.clientY - r.top, t.k * Math.exp(-e.deltaY * (e.ctrlKey ? 0.01 : 0.0015)));
     else { t.x -= e.deltaX; t.y -= e.deltaY; apply(); }
   }, { passive: false });
   vp.addEventListener('keydown', e => {
@@ -419,6 +506,7 @@
   $('zoomOut').onclick = () => zoomBy(1 / 1.25);
   $('zoomFit').onclick = () => (path ? fitPath() : fitAll());
   $('zoomMe').onclick = () => { if (me) centerOn(me, 0.9); };
+  $('zoomFit').title = 'Show the whole view';
   $('helloX').onclick = () => { $('hello').hidden = true; document.querySelector('.scan-fab').hidden = false;
     // the welcome card is gone: if the view is still where it opened, open it again without the card's space
     if (startT && startT.x === t.x && startT.y === t.y && startT.k === t.k) initialView(); else apply(); try { sessionStorage.setItem('ft.helloShut', '1'); } catch (e) { /* ignore */ } };
@@ -437,7 +525,7 @@
     $('pathBar').hidden = false;
     ensureVisible(rel.path);
     applyHighlight();
-    if (fit !== false) fitPath();
+    if (fit !== false && lay.mode !== 'family') fitPath();
   }
   function clearPath() { path = null; $('pathBar').hidden = true; applyHighlight(); }
   $('pathClear').onclick = clearPath;
@@ -447,7 +535,7 @@
     const o = lay.opts;
     const ns = path.rel.path.map(nodeOf).filter(Boolean);
     if (!ns.length) return;
-    if (lay.mode === 'list') {
+    if (readLike()) {
       // the list keeps reading size; if the whole line does not fit, show the other person in the middle
       const a = visibleArea(), k = listK();
       const top = Math.min(...ns.map(n => n.y)), bot = Math.max(...ns.map(n => n.y)) + o.cardH;
@@ -478,9 +566,12 @@
     const o = lay.opts;
     const ids = path.rel.path;
     let d = '';
+    const straight = lay.mode === 'sun' || lay.mode === 'family';
+    const mid = n => [n.x + (n.w || o.cardW) / 2, n.y + (n.h || o.cardH) / 2];
     for (let i = 1; i < ids.length; i++) {
       const A = nodeOf(ids[i - 1]), B = nodeOf(ids[i]);
       if (!A || !B) continue;
+      if (straight) { const [ax, ay] = mid(A), [bx, by] = mid(B); d += `M ${ax} ${ay} L ${bx} ${by} `; continue; }
       const pa = fam.people.get(ids[i - 1]);
       if (pa.spouse === ids[i] && A.y === B.y) {
         const y = A.y + o.cardH / 2, ax = A.x < B.x ? A.x + o.cardW : A.x, bx = A.x < B.x ? B.x : B.x + o.cardW;
@@ -585,6 +676,11 @@
   }
   function tapPerson(id) {
     tipSeen();
+    if (lay && lay.mode === 'family' && id !== lay.focus && onTreeView()) {
+      setFocus(id);
+      if (me && id !== me) setPath(me, id, false); else clearPath();
+      return;
+    }
     openPerson(id);
     if (me && id !== me) setPath(me, id);
     else if (id === me) clearPath();
@@ -786,7 +882,12 @@
     const local = /^file:|localhost|127\.0\.0\.1/.test(url);
     const urlIn = el('input', { type: 'url', value: url, 'aria-label': 'App address' });
     urlIn.onchange = () => { store.set('ft.appUrl', urlIn.value.trim()); renderOrganizer(); };
-    const paper = el('select', { 'aria-label': 'Poster paper size' }, ['A3', 'A2', 'A1', 'A4'].map(s => el('option', { value: s, text: s + ' landscape' })));
+    const paper = el('select', { 'aria-label': 'Poster paper size' }, ['A3', 'A2', 'A1', 'A4'].map(s => el('option', { value: s, text: s })));
+    const pstyle = el('select', { 'aria-label': 'Poster style' },
+      el('option', { value: 'sun', text: 'Sun — the whole family in one circle (best for a wall)' }),
+      el('option', { value: 'chart', text: 'Generations — one row per generation' }));
+    pstyle.value = store.get('ft.posterStyle') || 'sun';
+    pstyle.onchange = () => store.set('ft.posterStyle', pstyle.value);
     const style = el('select', { 'aria-label': 'Badge style' },
       el('option', { value: 'news', text: 'Newspaper style — to slide into badge holders' }),
       el('option', { value: 'plain', text: 'Plain — cut out or stick on' }));
@@ -817,8 +918,9 @@
         el('div', { class: 'row' },
           el('button', { class: 'btn primary', onclick: () => printBadges(style.value, num(bw.value, 90), num(bh.value, 64)) }, '🏷️ Name badges (' + people.length + ')'),
           el('button', { class: 'btn', onclick: printSign }, '🪧 Table sign (one big QR)')),
-        el('label', { text: 'Tree poster paper' }), paper,
-        el('button', { class: 'btn', onclick: () => printPoster(paper.value) }, '🌳 Print the whole tree as a poster')),
+        el('label', { text: 'Tree poster' }), pstyle,
+        el('label', { text: 'Paper' }), paper,
+        el('button', { class: 'btn', onclick: () => printPoster(paper.value, pstyle.value) }, '🌳 Print the whole tree as a poster')),
       el('div', { class: 'card-box' },
         el('h3', { text: 'Data check (' + w.length + ')' }),
         el('p', { class: 'muted', text: 'Last read from the sheet: ' + (data && data.fetchedAt ? new Date(data.fetchedAt).toLocaleString() : 'never') + '.' }),
@@ -875,7 +977,9 @@
         }
         const nm = display(p);
         const size = nm.length > 16 ? 's3' : nm.length > 11 ? 's2' : nm.length > 7 ? 's1' : '';
-        grid.append(el('div', { class: 'nbadge', style: `width:${wMm}mm;height:${hMm}mm` },
+        const bc = colourOf(p.id);
+        grid.append(el('div', { class: 'nbadge', style: `width:${wMm}mm;height:${hMm}mm` + (bc ? `;--br:${bc}` : '') },
+          bc ? el('div', { class: 'bstripe' }) : null,
           el('div', { class: 'mast', text: np.masthead || 'The Family Journal' }),
           el('div', { class: 'dateline' },
             el('span', { text: np.date || (np.volume || 'Vol. I') }),
@@ -912,18 +1016,20 @@
           el('div', { class: 'step' }, el('b', { text: '3' }), el('span', { text: 'Scan anyone’s badge to see how you’re related.' }))),
         q,
         el('div', { class: 'url', text: base }),
+        branchColour.size ? el('div', { class: 'key' }, el('b', { text: 'The colour on each badge is the family branch:' }),
+          el('div', {}, [...branchColour.keys()].map(id => el('span', { style: `--br:${branchColour.get(id)}` }, el('i'), display(fam.people.get(id)) + '’s family')))) : null,
         el('div', { class: 'ribbon', text: np.ribbon || ('Happy Birthday, ' + cfg.rootTitle + '!') })));
     });
   }
-  function printPoster(size) {
+  function printPoster(size, style) {
     const mm = { A4: [297, 210], A3: [420, 297], A2: [594, 420], A1: [841, 594] }[size] || [420, 297];
     const pxPerMm = 96 / 25.4;
-    // the poster always shows everyone; pick the paper direction and chart shape that print the cards largest
+    // the poster always shows everyone; pick the paper direction (and chart shape) that print the cards largest
     let best = null;
     [['landscape', mm[0], mm[1]], ['portrait', mm[1], mm[0]]].forEach(([dir, w, h]) => {
       const pw = (w - 16) * pxPerMm, ph = (h - 16) * pxPerMm - 60;
-      const split = bestChartSplit(pw + 40, ph + 30, new Set());
-      const L = FT.layoutTree(fam.people, fam.rootId, { split });
+      const L = style === 'sun' ? FT.layoutSun(fam.people, fam.rootId, { centerChild: centreFamilyId() })
+        : FT.layoutTree(fam.people, fam.rootId, { split: bestChartSplit(pw + 40, ph + 30, new Set()), centerChild: centreFamilyId() });
       const W = L.width + L.opts.padX + L.opts.padR, H = L.height + 2 * L.opts.padY;
       const k = Math.min(pw / W, ph / H);
       if (!best || k > best.k) best = { dir, L, W, H, k };
@@ -939,6 +1045,8 @@
       clone.querySelectorAll('.tog').forEach(c => c.remove());
       const wrap = el('div', { class: 'pposter-wrap', style: `width:${best.W * best.k}px;height:${best.H * best.k}px;margin:0 auto` }, clone);
       root.append(el('h1', { class: 'pposter-title', text: cfg.title }), wrap);
+      if (opt.colours && branchColour.size) root.append(el('div', { class: 'pposter-key' }, [...branchColour.keys()].map(id =>
+        el('span', { style: `--br:${branchColour.get(id)}` }, el('i'), display(fam.people.get(id)) + '’s family'))));
       lay = keepLay; path = keepPath; drawTree(); t = keepT; apply();
     });
   }

@@ -226,6 +226,77 @@ input:focus-visible, select:focus-visible, button:focus-visible { outline: 3px s
 .toast { position: fixed; z-index: 60; left: 16px; right: 16px; bottom: calc(var(--bottom-h) + 14px); margin: 0 auto; max-width: 420px; background: var(--plum-900); color: #fff;
   border-radius: 14px; padding: 12px 16px; font-size: 14px; box-shadow: 0 12px 30px -10px rgba(0,0,0,.4); }
 
+/* ---------- the View menu ---------- */
+.view-pick { position: relative; }
+.view-btn b { color: var(--plum-900); }
+.view-menu { position: absolute; z-index: 40; top: calc(100% + 6px); right: 0; width: min(360px, calc(100vw - 24px)); background: #fff; border: 1px solid var(--line);
+  border-radius: 16px; box-shadow: 0 22px 44px -18px rgba(74,31,49,.45); padding: 6px; }
+@media (max-width: 759px) { .view-menu { left: 0; right: auto; } }
+.vm-item { display: flex; gap: 12px; align-items: flex-start; width: 100%; text-align: left; border: 0; background: none; border-radius: 12px; padding: 10px 12px; }
+.vm-item:hover { background: var(--plum-50); }
+.vm-item.on { background: var(--plum-100); }
+.vm-icon { font-size: 20px; width: 26px; text-align: center; flex-shrink: 0; line-height: 1.3; }
+.vm-text { display: flex; flex-direction: column; gap: 2px; }
+.vm-text b { font-size: 15px; color: var(--plum-900); }
+.vm-text small { font-size: 13px; color: var(--muted); line-height: 1.35; }
+.vm-opts { border-top: 1px solid var(--plum-100); margin-top: 4px; padding: 10px 12px 4px; display: flex; flex-direction: column; gap: 8px; font-size: 14px; }
+.vm-opts label { display: flex; gap: 10px; align-items: center; justify-content: flex-start; text-align: left; min-height: 32px; margin: 0; font-weight: 500; }
+.vm-opts input { flex: 0 0 20px; width: 20px; height: 20px; min-height: 0; margin: 0; accent-color: var(--plum-800); }
+.vm-opts p { margin: 2px 0 0; font-size: 12px; }
+
+/* ---------- branch buttons ---------- */
+.branch-bar { display: flex; gap: 6px; padding: 6px 16px; overflow-x: auto; border-bottom: 1px solid var(--plum-100); background: var(--paper); scrollbar-width: none; }
+.branch-bar::-webkit-scrollbar { display: none; }
+.br-chip { flex: 0 0 auto; display: inline-flex; align-items: center; gap: 7px; min-height: 34px; padding: 0 12px; border-radius: 999px;
+  border: 1px solid var(--line); background: #fff; font-weight: 600; font-size: 14px; color: var(--plum-800); --br: var(--plum-400); }
+.br-dot { width: 11px; height: 11px; border-radius: 50%; background: var(--br); }
+
+/* ---------- branch colours on the cards ---------- */
+.card.br { border-left: 6px solid var(--br); padding-left: 8px; }
+.card.root.br { border-left-color: var(--gold-500); }
+
+/* ---------- family view ---------- */
+.sec-label { position: absolute; transform: translateX(-50%); background: var(--paper); padding: 0 8px; font-size: 12px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--plum-600); white-space: nowrap; }
+.sec-label.more { text-transform: none; letter-spacing: 0; font-weight: 600; color: var(--muted); white-space: normal; width: 300px; text-align: center; }
+.card.focus { box-shadow: 0 0 0 4px rgba(201,147,59,.45), 0 10px 22px -10px rgba(74,31,49,.4); border-color: var(--gold-500); }
+.up-btn { position: absolute; transform: translate(-50%, -100%); z-index: 3; border: 1px solid var(--line); background: #fff; border-radius: 999px; min-height: 32px; padding: 0 12px;
+  font-size: 13px; font-weight: 600; color: var(--plum-800); white-space: nowrap; }
+.stage.as-family { margin-top: 8px; }
+
+/* ---------- sun view ---------- */
+.lines .sun-slice { fill: var(--br); fill-opacity: .3; stroke: #fff; stroke-width: 3; }
+.dim .sun-slice { fill-opacity: .12; }
+.as-sun .card { border-radius: 10px; padding: 3px 8px; gap: 0; transform-origin: 50% 50%; }
+.as-sun .card .badge { font-size: 14px; }
+.as-sun .card .full { font-size: 10px; -webkit-line-clamp: 1; }
+.as-sun .card.br { border-left-width: 4px; padding-left: 6px; }
+
+/* ---------- smaller welcome card and zoom buttons ---------- */
+@media (max-width: 759px) {
+  .hello-card { padding: 12px 12px 10px; border-radius: 16px; }
+  .hello-title { font-size: 17px; }
+  .hello-text { display: none; }
+  .hello-row .btn { min-height: 42px; }
+}
+.zoom button { min-width: 42px; min-height: 42px; border-radius: 12px; background: rgba(255,255,255,.88); backdrop-filter: blur(4px); }
+
+/* ---------- newspaper look (matches the badges and the cake) ---------- */
+body.news {
+  --plum-900: #141414; --plum-800: #222; --plum-700: #333; --plum-600: #4d4a43; --plum-400: #8b8578;
+  --plum-200: #d6ccb2; --plum-100: #e4dac2; --plum-50: #eee6d2; --line: #cdc2a6; --paper: #f3ecdc; --card: #fbf8ee;
+  --ink: #141414; --muted: #5a5448; --gold-600: #6d5a2b; --gold-500: #8a7038; --gold-300: #c9b27a;
+  --serif: 'Playfair Display', Georgia, serif;
+}
+body.news .top { background: rgba(243,236,220,.97); border-bottom: 3px double #141414; }
+body.news .brand h1 { text-transform: uppercase; letter-spacing: .02em; font-weight: 900; }
+body.news .logo { background: #141414; }
+body.news .card { border-radius: 4px; background: var(--card); }
+body.news .card .full { font-family: 'Old Standard TT', Georgia, serif; }
+body.news .card.root { background: #141414; border-color: #141414; }
+body.news .card.root .full { color: #d6ccb2; }
+body.news .tool, body.news .br-chip, body.news .view-menu, body.news .zoom button, body.news input[type=search] { background: var(--card); }
+body.news .lines .tree-line { stroke: #6d6656; }
+
 /* ---------- print ---------- */
 .print-root { display: none; }
 @media print {
@@ -283,7 +354,14 @@ input:focus-visible, select:focus-visible, button:focus-visible { outline: 3px s
 .psign .url { font-size: 10pt; margin-top: 3mm; word-break: break-all; }
 .psign .ribbon { margin-top: auto; font-family: 'Playfair Display', Georgia, serif; font-style: italic; font-weight: 700; font-size: 24pt; border-top: 0.4mm solid #111; padding-top: 3mm; }
 .pposter-title { font-family: var(--serif); font-size: 28pt; color: var(--plum-900); text-align: center; margin: 0 0 4mm; }
-.pposter-wrap { position: relative; }
+.pposter-wrap { position: relative; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+.pposter-key, .psign .key div { display: flex; flex-wrap: wrap; justify-content: center; gap: 4mm 8mm; }
+.pposter-key { margin-top: 4mm; font-size: 12pt; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+.pposter-key span, .psign .key span { display: inline-flex; align-items: center; gap: 2mm; }
+.pposter-key i, .psign .key i { width: 5mm; height: 5mm; border-radius: 50%; background: var(--br); display: inline-block; }
+.psign .key { margin-top: 5mm; font-size: 12pt; }
+.psign .key b { display: block; font-weight: 700; margin-bottom: 2mm; }
+.nbadge .bstripe { height: calc(1.8mm * var(--k)); background: var(--br); margin: calc(-2.4mm * var(--k)) calc(-3mm * var(--k)) calc(1.2mm * var(--k)); flex-shrink: 0; }
 
 /* ---------- scanner ---------- */
 .scan-fab { position: absolute; left: 12px; bottom: 12px; z-index: 5; display: flex; align-items: center; gap: 8px; min-height: 52px; padding: 0 20px;

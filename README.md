@@ -25,7 +25,11 @@ Badges link to each person's ID (FAM-014). Once badges are printed, don't re-num
 - `index.html`, `css/app.css`: the page.
 - `js/data.js`: reads the sheet and links people by name. It handles nicknames, typos and z"l.
 - `js/relations.js`: works out how two people are related, in plain English.
-- `js/layout.js`: places the cards on the tree. Two views: **Chart** (the default everywhere — one row per generation; the family named in `centerFamily` in `js/config.js` is built in the middle and the tree opens on it) and **List** (each generation one step to the right, read top to bottom). Families can be opened and closed (+N / −); the poster always prints everyone.
+- `js/layout.js` + `js/views.js`: place the cards. The **View** menu on the tree offers four views, remembered separately for a phone and a bigger screen (a link can open one: `?view=family|chart|sun|list`):
+  **Family** (one person in the middle — parents above, children and grandchildren below; tap anyone to move to them; the default on a phone),
+  **Generations** (one row per generation, the `centerFamily` from `js/config.js` built in the middle; the default on a big screen),
+  **Sun** (the whole family in one circle, each branch a coloured slice) and **List** (top to bottom like a page).
+  Options in the same menu: colour each branch (also printed on the badges and the table sign) and a newspaper look. The poster prints as a Sun or as Generations.
 - `js/app.js`: the screens, zoom, live updates and printing.
 - `tests/`: run with `node --test tests/family.test.js`.
 

@@ -1,7 +1,7 @@
 // Run: node --test tests/
 const test = require('node:test');
 const assert = require('node:assert');
-const FT = Object.assign({}, require('../js/data.js'), require('../js/relations.js'), require('../js/layout.js'));
+const FT = Object.assign({}, require('../js/data.js'), require('../js/relations.js'), require('../js/layout.js'), require('../js/views.js'));
 
 const H = ['Person ID', 'Full Name (First & Last)', 'Nickname / Badge Name', 'Connection Type', 'Generation', 'Parent 1 (Full Name)', 'Parent 2 (Full Name)', 'Spouse / Partner (Full Name)'];
 const rows = [H,
@@ -188,4 +188,38 @@ test('the chosen family is built in the middle of the chart, the others keep the
   assert.ok(x('Child0 Person') < x('Child2 Person') && x('Child2 Person') < x('Child1 Person'), 'Child2 sits between Child0 and Child1');
   assert.strictEqual(L.nodes.length, FT.layoutTree(f.people, f.rootId, { split: 99 }).nodes.length);
   noOverlap(L);
+});
+
+test('branch colours: everyone below the root belongs to one child\'s family, spouses too', () => {
+  const f = bigFamily();
+  const id = name => [...f.people.values()].find(p => p.name === name).id;
+  const b = FT.branchMap(f.people, f.rootId);
+  assert.strictEqual(b.get(id('Great120 Person')), id('Child1 Person'));
+  assert.strictEqual(b.get(id('Partner2 Other')), id('Child2 Person'));
+  assert.strictEqual(b.get(id('Gspouse0 Other')), id('Child0 Person'));
+  assert.ok(!b.has(f.rootId));
+});
+
+test('family view: parents above, the person, children and grandchildren, nobody twice, within the width', () => {
+  const f = bigFamily();
+  const id = name => [...f.people.values()].find(p => p.name === name).id;
+  const L = FT.layoutFamily(f.people, id('Grand10 Person'), { maxW: 340 });
+  const ids = L.nodes.map(n => n.id);
+  assert.strictEqual(new Set(ids).size, ids.length, 'nobody twice');
+  ['Child1 Person', 'Partner1 Other', 'Grand10 Person', 'Gspouse1 Other', 'Great100 Person', 'Grand11 Person'].forEach(n => assert.ok(ids.includes(id(n)), n));
+  const y = n => L.nodes.find(x => x.id === id(n)).y;
+  assert.ok(y('Child1 Person') < y('Grand10 Person') && y('Grand10 Person') < y('Great100 Person'));
+  L.nodes.forEach(n => assert.ok(n.x >= 0 && n.x + L.opts.cardW <= L.width + 0.5));
+  noOverlap(L);
+});
+
+test('sun view: everyone linked to the root is placed once, cards do not touch', () => {
+  const f = bigFamily();
+  const L = FT.layoutSun(f.people, f.rootId);
+  const linked = [...f.people.values()].filter(p => p.onTree !== false && p.kind !== 'friend');
+  assert.strictEqual(L.nodes.length + L.notShown.length, linked.length);
+  const c = L.nodes.filter(n => !n.core);
+  for (let i = 0; i < c.length; i++) for (let j = i + 1; j < c.length; j++)
+    assert.ok(Math.hypot(c[i].x - c[j].x, c[i].y - c[j].y) >= L.opts.cardH, c[i].id + ' / ' + c[j].id);
+  assert.ok(L.lines.every(l => l.branch), 'every slice has a branch');
 });
