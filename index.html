@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Playfair+Display:ital,wght@0,600;0,700;0,900;1,700&family=Old+Standard+TT:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/app.css?v=33">
+  <link rel="stylesheet" href="css/app.css?v=34">
 </head>
 <body>
   <header class="top">
@@ -32,11 +32,11 @@
     <!-- TREE -->
     <section id="view-tree" class="view on">
       <div class="tree-bar">
-        <input id="treeFind" type="search" placeholder="Find someone in the tree" autocomplete="off" aria-label="Find someone in the tree">
+        <input id="treeFind" type="search" placeholder="Find a name" autocomplete="off" aria-label="Find someone in the tree">
         <div id="treeFindList" class="find-list" hidden></div>
         <div class="tree-tools">
           <div class="view-pick">
-            <button id="viewBtn" class="tool view-btn" aria-haspopup="true" aria-expanded="false" aria-controls="viewMenu">View: <b id="viewName">…</b> <span aria-hidden="true">▾</span></button>
+            <button id="viewBtn" class="tool view-btn" aria-haspopup="true" aria-expanded="false" aria-controls="viewMenu"><span class="vb-l">View: </span><b id="viewName">…</b> <span aria-hidden="true">▾</span></button>
             <div id="viewMenu" class="view-menu" role="menu" aria-label="How to show the family" hidden>
               <div id="viewOpts" class="vm-opts">
                 <label><input type="checkbox" id="optColours"> Colour each family branch</label>
@@ -64,7 +64,7 @@
           <button class="scan-fab" data-scan aria-label="Scan a badge"><span aria-hidden="true">📷</span> Scan a badge</button>
           <div id="hello" class="hello-card" hidden>
             <button class="hello-x" id="helloX" aria-label="Close">✕</button>
-            <p class="hello-title">👋 Welcome! Who are you?</p>
+            <p class="hello-title">👋 <span class="hello-w">Welcome! </span>Who are you?</p>
             <p class="hello-text">Scan your own badge or find your name — then the tree shows how you're related to everyone here.</p>
             <div class="hello-row">
               <button class="btn primary" data-scan>📷 Scan badge</button>
@@ -143,12 +143,12 @@
   <div id="toast" class="toast" hidden></div>
   <div id="printRoot" class="print-root"></div>
 
-  <script src="js/config.js?v=33"></script>
-  <script src="js/vendor/qrcode.min.js?v=33"></script>
-  <script src="js/data.js?v=33"></script>
-  <script src="js/relations.js?v=33"></script>
-  <script src="js/views.js?v=33"></script>
-  <script src="js/layout.js?v=33"></script>
-  <script src="js/app.js?v=33"></script>
+  <script src="js/config.js?v=34"></script>
+  <script src="js/vendor/qrcode.min.js?v=34"></script>
+  <script src="js/data.js?v=34"></script>
+  <script src="js/relations.js?v=34"></script>
+  <script src="js/views.js?v=34"></script>
+  <script src="js/layout.js?v=34"></script>
+  <script src="js/app.js?v=34"></script>
 </body>
 </html>
