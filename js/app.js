@@ -274,7 +274,8 @@
     lay = layoutFor(mode);
     if (path) ensureVisible(path.rel.path);
     drawTree(); syncViewButtons();
-    if (path && mode !== 'family') fitPath(); else if (me && nodeOf(me) && mode !== 'family' && mode !== 'sun') centerOn(me); else fitAll();
+    // a chart too big to read whole starts zoomed in (readable, top of the tree) - the Fit button still shows everything
+    if (path && mode !== 'family') fitPath(); else initialViewNow();
   }
   // the Family view moves to whoever you tap
   function setFocus(id) {
@@ -327,8 +328,8 @@
     if (lay.mode === 'family') { setFocus(id); return; }
     centerOn(id, lay.mode === 'sun' ? 0.75 : 0.7);
   }
-  $('openAll').onclick = () => { collapsed.clear(); relayout(); if (lay.mode === 'chart') fitAll(); };
-  $('closeAll').onclick = () => { defaultCollapse('list'); if (!collapsed.size) fam.people.forEach(p => { if (p.blood && p.children.length && p.id !== fam.rootId) collapsed.add(p.id); }); relayout(); fitAll(); };
+  $('openAll').onclick = () => { collapsed.clear(); relayout(); if (lay.mode === 'chart') initialViewNow(); };
+  $('closeAll').onclick = () => { defaultCollapse('list'); if (!collapsed.size) fam.people.forEach(p => { if (p.blood && p.children.length && p.id !== fam.rootId) collapsed.add(p.id); }); relayout(); initialViewNow(); };
   let resizeTimer;
   window.addEventListener('resize', () => {
     clearTimeout(resizeTimer);

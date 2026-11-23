@@ -239,7 +239,7 @@ input:focus-visible, select:focus-visible, button:focus-visible { outline: 3px s
 .view-btn b { color: var(--plum-900); }
 .view-menu { position: absolute; z-index: 40; top: calc(100% + 6px); right: 0; width: min(360px, calc(100vw - 24px)); background: #fff; border: 1px solid var(--line);
   border-radius: 16px; box-shadow: 0 22px 44px -18px rgba(74,31,49,.45); padding: 6px; }
-@media (max-width: 759px) { .view-menu { left: auto; right: 0; max-width: calc(100vw - 20px); } }
+@media (max-width: 759px) { .view-pick { position: static; } .view-menu { left: 10px; right: 10px; width: auto; } }
 .vm-item { display: flex; gap: 12px; align-items: flex-start; width: 100%; text-align: left; border: 0; background: none; border-radius: 12px; padding: 10px 12px; }
 .vm-item:hover { background: var(--plum-50); }
 .vm-item.on { background: var(--plum-100); }
