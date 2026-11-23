@@ -218,14 +218,32 @@
   }
   function layoutFor(mode) {
     const centerChild = centreFamilyId();
-    if (mode === 'list') return FT.layoutTree(fam.people, fam.rootId, { split: rootGen(), collapsed, centerChild });
+    if (mode === 'list') return FT.layoutTree(fam.people, fam.rootId, { split: rootGen(), collapsed, centerChild, only: lineOnly() });
     if (mode === 'family') {
       const w = vp.getBoundingClientRect().width || window.innerWidth;
       return FT.layoutFamily(fam.people, focusFor(), { maxW: Math.max(320, Math.min(1100, w - 28)) });
     }
     if (mode === 'sun') return FT.layoutSun(fam.people, fam.rootId, { centerChild: sunTopId(), familyName });
-    return FT.layoutTree(fam.people, fam.rootId, { split: 99, collapsed, centerChild });
+    return FT.layoutTree(fam.people, fam.rootId, { split: 99, collapsed, centerChild, only: lineOnly() });
   }
+  // 'focus on the line': while a line between two people is lit up, the Generations and List views draw only the
+  // people on it (with their husbands / wives and their parents up to the top), so the line is short and close together.
+  // One tap on the line bar shows everyone again; the choice is remembered on this phone.
+  let lineFocus = store.get('ft.lineFocus') !== false;
+  function lineOnly() {
+    if (!path || !lineFocus) return null;
+    const s = new Set();
+    const up = id => { if (!id || s.has(id)) return; s.add(id); const p = fam.people.get(id); if (p) p.parents.forEach(up); };
+    path.rel.path.forEach(id => { up(id); const p = fam.people.get(id); if (p && p.spouse) up(p.spouse); });
+    return s;
+  }
+  const focusApplies = () => !!lay && (lay.mode === 'chart' || lay.mode === 'list');
+  function syncFocusBtn() {
+    const b = $('pathFocus'); if (!b) return;
+    b.hidden = !path || !focusApplies();
+    b.textContent = lineFocus ? 'Show everyone' : 'Focus on line';
+  }
+  $('pathFocus').onclick = () => { lineFocus = !lineFocus; store.set('ft.lineFocus', lineFocus); relayout(); syncFocusBtn(); if (path) fitPath(); };
   function relayout() { lay = layoutFor(currentMode()); drawTree(); syncViewButtons(); }
   // the list reads like a page: zoom buttons step aside, Fit becomes 'Top'
   function syncZoomButtons() {
@@ -273,7 +291,7 @@
     defaultCollapse(mode);
     lay = layoutFor(mode);
     if (path) ensureVisible(path.rel.path);
-    drawTree(); syncViewButtons();
+    drawTree(); syncViewButtons(); syncFocusBtn();
     // a chart too big to read whole starts zoomed in (readable, top of the tree) - the Fit button still shows everything
     if (path && mode !== 'family') fitPath(); else initialViewNow();
   }
@@ -552,11 +570,17 @@
     $('pathTitle').textContent = FT.describe(fam.people, rel, a, b, you, fam.rootId);
     $('pathSub').textContent = rel.path.map(id => display(fam.people.get(id))).join(' → ');
     $('pathBar').hidden = false;
+    if (lineFocus && focusApplies()) relayout();
+    syncFocusBtn();
     ensureVisible(rel.path);
     applyHighlight();
     if (fit !== false && lay.mode !== 'family') fitPath();
   }
-  function clearPath() { path = null; $('pathBar').hidden = true; applyHighlight(); }
+  function clearPath() {
+    const wasFocused = lineFocus && focusApplies() && !!path;
+    path = null; $('pathBar').hidden = true;
+    if (wasFocused) { relayout(); initialViewNow(); } else applyHighlight();
+  }
   $('pathClear').onclick = clearPath;
 
   function fitPath() {
@@ -808,7 +832,12 @@
     $('sheet').scrollTop = keepScroll ? scroll : 0;
     if (!keepScroll) $('sheetClose').focus();
   }
-  function closeSheet() { $('sheet').hidden = true; $('scrim').hidden = true; openId = null; }
+  function closeSheet() {
+    const was = !$('sheet').hidden;
+    $('sheet').hidden = true; $('scrim').hidden = true; openId = null;
+    // the focused line was fitted above the panel: once the panel closes, let it fill the screen
+    if (was && path && lineFocus && focusApplies() && onTreeView()) fitPath();
+  }
   $('sheetClose').onclick = closeSheet; $('scrim').onclick = closeSheet;
   document.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('sheet').hidden) closeSheet(); });
 

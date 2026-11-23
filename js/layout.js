@@ -55,12 +55,14 @@
       // children hang from the descendant (the unit's first card); a partner's own children are not drawn here
       const sources = head.blood || u.members.length === 1 ? [u.members[0]] : u.members;
       const kidIds = [];
-      sources.forEach(m => P(m).children.forEach(c => { if (!claimed.has(c) && !kidIds.includes(c) && P(c).onTree !== false) kidIds.push(c); }));
+      // o.only (a Set): draw only these people - the 'focus on the line' view hides everyone off the line
+      const shown = c => !o.only || o.only.has(c);
+      sources.forEach(m => P(m).children.forEach(c => { if (!claimed.has(c) && !kidIds.includes(c) && P(c).onTree !== false && shown(c)) kidIds.push(c); }));
       kidIds.sort((a, b) => P(a).order - P(b).order);
       kidIds.forEach(c => { if (!claimed.has(c)) u.kids.push(build(c, gen + 1)); });
       // the partner's own children (step-family) come after them, from the partner's card
       if (head.blood && u.members.length === 2) {
-        P(u.members[1]).children.filter(c => !claimed.has(c) && P(c).onTree !== false)
+        P(u.members[1]).children.filter(c => !claimed.has(c) && P(c).onTree !== false && shown(c))
           .sort((a, b) => P(a).order - P(b).order)
           .forEach(c => { if (!claimed.has(c)) u.stepKids.push(build(c, gen + 1)); });
       }
@@ -227,7 +229,7 @@
     // ----- trees: the root first, then anyone not reachable from it -----
     const units = [];
     if (rootId && people.has(rootId)) units.push({ u: build(rootId, rootGen), main: true });
-    const rest = [...people.values()].filter(p => p.kind !== 'friend' && p.onTree !== false).sort((a, b) => a.order - b.order);
+    const rest = [...people.values()].filter(p => p.kind !== 'friend' && p.onTree !== false && (!o.only || o.only.has(p.id))).sort((a, b) => a.order - b.order);
     rest.forEach(p => {
       if (claimed.has(p.id)) return;
       if (p.parents.some(id => !claimed.has(id) && people.has(id) && P(id).onTree !== false)) return; // their parent will start that tree
