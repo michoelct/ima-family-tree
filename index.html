@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Playfair+Display:ital,wght@0,600;0,700;0,900;1,700&family=Old+Standard+TT:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/app.css?v=35">
+  <link rel="stylesheet" href="css/app.css?v=36">
 </head>
 <body>
   <header class="top">
@@ -52,6 +52,7 @@
       <div id="branchBar" class="branch-bar" aria-label="Ima’s children — tap one to find them" hidden></div>
       <div id="pathBar" class="path-bar" hidden>
         <div class="path-text"><strong id="pathTitle"></strong><span id="pathSub"></span></div>
+        <button id="pathScan" class="path-scan" data-scan aria-label="Scan the next badge">📷 Next</button>
         <button id="pathClear" aria-label="Clear highlighted line">✕</button>
       </div>
       <div class="vp-wrap">
@@ -131,24 +132,26 @@
     <div class="scan-frame" aria-hidden="true"></div>
     <div class="scan-top">
       <p id="scanMsg">Starting the camera…</p>
+      <p id="scanLast" class="scan-last" hidden></p>
       <div id="scanHelp" class="scan-help" hidden>
         To scan inside the app, allow the camera when your phone asks (or in its settings for this site).
         You can also open your phone's own camera app and point it at the badge — that works too.
         <button class="btn" id="scanToList">Find the person in a list instead</button>
       </div>
     </div>
+    <div id="scanRecent" class="scan-recent" hidden></div>
     <button id="scanClose" class="btn scan-close">Close</button>
   </div>
 
   <div id="toast" class="toast" hidden></div>
   <div id="printRoot" class="print-root"></div>
 
-  <script src="js/config.js?v=35"></script>
-  <script src="js/vendor/qrcode.min.js?v=35"></script>
-  <script src="js/data.js?v=35"></script>
-  <script src="js/relations.js?v=35"></script>
-  <script src="js/views.js?v=35"></script>
-  <script src="js/layout.js?v=35"></script>
-  <script src="js/app.js?v=35"></script>
+  <script src="js/config.js?v=36"></script>
+  <script src="js/vendor/qrcode.min.js?v=36"></script>
+  <script src="js/data.js?v=36"></script>
+  <script src="js/relations.js?v=36"></script>
+  <script src="js/views.js?v=36"></script>
+  <script src="js/layout.js?v=36"></script>
+  <script src="js/app.js?v=36"></script>
 </body>
 </html>

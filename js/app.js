@@ -764,7 +764,11 @@
       el('h2', { id: 'sheetName' }, display(p), p.memorial ? el('span', { class: 'zl', text: ' z”l' }) : null),
       el('p', { class: 'fullname', text: p.name + (p.id === me ? ' · this is you' : '') }));
 
-    if (me && me !== id) body.append(relBox(me, id, true));
+    if (me && me !== id) {
+      body.append(relBox(me, id, true));
+      // scanning one person after another: the next scan is one tap away
+      body.append(el('button', { class: 'btn primary scan-next', onclick: () => { closeSheet(); openScanner(); } }, '📷 Scan the next badge'));
+    }
     else if (!me) {
       const sel = el('select', { 'aria-label': 'Compare with someone' },
         el('option', { value: '', text: 'How is ' + display(p) + ' related to…' }),
@@ -1245,7 +1249,24 @@
       return;
     }
     if (id === me) { go('tree'); toast('That’s your own badge 🙂 Scan someone else’s!'); centerOn(me, 0.9); return; }
+    rememberScan(id);
     go('tree'); openPerson(id); setPath(me, id);
+  }
+
+  // the people scanned so far (newest first) - shown on the camera screen so the next scan carries on from the last
+  function scannedList() { return (store.get('ft.scanned') || []).filter(x => fam.people.has(x)); }
+  function rememberScan(id) { store.set('ft.scanned', [id].concat(scannedList().filter(x => x !== id)).slice(0, 12)); }
+  function showScanRecent() {
+    const list = me ? scannedList().filter(x => x !== me) : [];
+    const last = list[0], box = $('scanRecent');
+    $('scanLast').hidden = !last;
+    if (last) { const rel = FT.relate(fam.people, me, last, fam.rootId); $('scanLast').textContent = 'Last: ' + (rel ? FT.describe(fam.people, rel, me, last, true, fam.rootId) : display(fam.people.get(last))); }
+    box.textContent = '';
+    box.hidden = list.length < 2;
+    if (list.length > 1) {
+      box.append(el('span', { text: 'Scanned so far:' }));
+      list.slice(0, 6).forEach(x => box.append(el('button', { onclick: () => { stopScanner(); go('tree'); openPerson(x); setPath(me, x); } }, display(fam.people.get(x)))));
+    }
   }
 
   // ---------- in-app badge scanner ----------
@@ -1277,6 +1298,7 @@
     $('scanner').hidden = false;
     $('scanMsg').textContent = 'Starting the camera…';
     $('scanHelp').hidden = true;
+    showScanRecent();
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) return scanFailed('This browser can’t open the camera.');
     try {
       scan.stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' } }, audio: false });
@@ -1293,7 +1315,7 @@
     if (!scan.detector) {
       try { await loadJsQR(); } catch (e) { return scanFailed('The badge reader didn’t load — check the internet connection.'); }
     }
-    $('scanMsg').textContent = 'Point at the QR code on a badge';
+    $('scanMsg').textContent = me ? 'Point at the next person’s badge' : 'Point at the QR code on a badge';
     tick();
   }
 

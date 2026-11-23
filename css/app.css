@@ -457,3 +457,11 @@ body.news .lines .tree-line { stroke: #6d6656; }
   .hello-row .btn { flex: 1 1 0; min-width: 0; min-height: 36px; font-size: 12.5px; padding: 0 6px; overflow: hidden; text-overflow: ellipsis; }
   .hello-x { order: 3; position: static; flex: 0 0 auto; width: 30px; height: 30px; }
 }
+
+/* ---------- scanning one person after another (2026-11-23) ---------- */
+.scan-next { width: 100%; margin-top: 12px; min-height: 50px; font-size: 16px; }
+.path-bar .path-scan { min-width: auto; padding: 0 12px; font-weight: 700; white-space: nowrap; background: #fff; color: var(--plum-900); }
+.scan-last { margin-top: 8px !important; font-size: 14px !important; font-weight: 500 !important; color: var(--gold-300, #f3d48a); }
+.scan-recent { position: absolute; left: 12px; right: 12px; bottom: calc(84px + env(safe-area-inset-bottom)); display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; align-items: center; }
+.scan-recent span { width: 100%; text-align: center; color: #fff; font-size: 13px; text-shadow: 0 1px 4px rgba(0,0,0,.6); }
+.scan-recent button { border: 0; border-radius: 999px; padding: 6px 12px; background: rgba(255,255,255,.88); color: var(--plum-900); font-weight: 600; font-size: 13px; }
