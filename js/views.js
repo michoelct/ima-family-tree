@@ -131,7 +131,14 @@
       const u = { members, depth, kids: [] };
       const kidIds = [];
       members.forEach(m => P(m).children.forEach(c => { if (!claimed.has(c) && !kidIds.includes(c) && onTree(P(c))) kidIds.push(c); }));
-      kidIds.sort(byOrder(people)).forEach(c => { if (!claimed.has(c)) u.kids.push(unit(c, depth + 1)); });
+      kidIds.sort(byOrder(people));
+      // a couple's children sit under the parent(s) they come from: the first card's own children, then the
+      // children of both, then the second card's own children (e.g. Ben's children from his first marriage on his side)
+      if (members.length === 2) {
+        const side = c => { const ps = P(c).parents; const a = ps.includes(members[0]), b = ps.includes(members[1]); return a && !b ? 0 : b && !a ? 2 : 1; };
+        kidIds.splice(0, kidIds.length, ...kidIds.map((c, i) => ({ c, i, s: side(c) })).sort((x, y) => x.s - y.s || x.i - y.i).map(x => x.c));
+      }
+      kidIds.forEach(c => { if (!claimed.has(c)) u.kids.push(unit(c, depth + 1)); });
       u.weight = Math.max(members.length, u.kids.reduce((s, k) => s + k.weight, 0));
       return u;
     };
@@ -194,8 +201,10 @@
       // a couple turns the same way: the side of the circle is decided once, by the middle of their slice
       // (deciding it per card turned the two cards at the top of the circle in opposite directions)
       const flip = Math.cos(mid) < -1e-9;
+      u.mAng = [];
       u.members.forEach((id, i) => {
         const a = mid + (i - (n - 1) / 2) * slot / r[u.depth];
+        u.mAng[i] = a;
         const deg = a * 180 / Math.PI;
         nodes.push({ id, x: cx + rc * Math.cos(a) - o.cardW / 2, y: cy + rc * Math.sin(a) - o.cardH / 2, gen: P(id).gen, rot: flip ? deg + 180 : deg, depth: u.depth });
       });
@@ -207,9 +216,15 @@
       if (!u.kids.length) return;
       const pm = (u.a0 + u.a1) / 2;
       const from = u.depth ? r[u.depth] + o.cardW : Math.min(r[1] * 0.55, r[1] - o.ringGap);
+      // a child of one parent only draws from that parent's card; a child of both from between the two cards
+      const fromA = k => {
+        if (!u.depth || u.members.length < 2) return pm;
+        const ps = P(k.members[0]).parents, has = u.members.map(m => ps.includes(m));
+        return has[0] && !has[1] ? u.mAng[0] : has[1] && !has[0] ? u.mAng[1] : (u.mAng[0] + u.mAng[1]) / 2;
+      };
       u.kids.forEach(k => {
         const km = (k.a0 + k.a1) / 2, to = r[k.depth] - 2;
-        lines.push({ d: `M ${pt(from, pm)} L ${pt(to, km)}`, cls: 'sun-link', member: k.members[0], depth: k.depth });
+        lines.push({ d: `M ${pt(from, fromA(k))} L ${pt(to, km)}`, cls: 'sun-link', member: k.members[0], depth: k.depth });
       });
       if (u.depth) {
         const d1 = u.depth + 1, gap = 0.002;
