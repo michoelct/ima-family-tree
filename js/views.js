@@ -136,6 +136,17 @@
       return u;
     };
     const top = unit(rootId, 0);
+    // brothers whose children carry the same family name sit side by side, so each ring shows that family as one
+    // block (married sisters' children carry their husband's name and form their own block); otherwise the order is kept
+    if (typeof o.familyName === 'function') (function group(u) {
+      if (u.kids.length > 1) {
+        const key = k => String(o.familyName(k.kids.length ? k.kids.map(c => c.members[0]) : k.members) || '').toLowerCase();
+        const firstAt = new Map();
+        u.kids.forEach((k, i) => { const n = key(k); k._g = n; if (!firstAt.has(n)) firstAt.set(n, i); });
+        u.kids = u.kids.map((k, i) => ({ k, i })).sort((a, b) => firstAt.get(a.k._g) - firstAt.get(b.k._g) || a.i - b.i).map(x => x.k);
+      }
+      u.kids.forEach(group);
+    })(top);
     // the chosen family sits at the top of the circle
     if (o.centerChild) {
       const i = top.kids.findIndex(k => k.members[0] === o.centerChild);
