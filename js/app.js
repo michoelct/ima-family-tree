@@ -1193,6 +1193,9 @@
       clone.style.position = 'absolute';
       clone.querySelectorAll('.me').forEach(c => c.classList.remove('me'));
       clone.querySelectorAll('.tog').forEach(c => c.remove());
+      // the family-name curves need ids of their own, or the names follow the hidden on-screen tree and vanish on paper
+      clone.querySelectorAll('[id]').forEach(n => { n.id = 'pp-' + n.id; });
+      clone.querySelectorAll('textPath').forEach(tp => tp.setAttribute('href', '#pp-' + tp.getAttribute('href').slice(1)));
       const wrap = el('div', { class: 'pposter-wrap', style: `width:${best.W * best.k}px;height:${best.H * best.k}px;margin:0 auto` }, clone);
       root.append(el('h1', { class: 'pposter-title', text: cfg.title }), wrap);
       if (opt.colours && branchColour.size) root.append(el('div', { class: 'pposter-key' }, el('b', { text: cfg.rootTitle + '’s children:' }), [...branchColour.keys()].map(id =>
